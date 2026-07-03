@@ -37,6 +37,19 @@
   @media(min-width:768px){
     #sidebar.menu-closed{ transform:none; margin-left:-340px; opacity:0; }
   }
+  /* panel debugger (derecha) */
+  #debugger{ transition: margin-right .35s cubic-bezier(.4,0,.2,1), transform .35s cubic-bezier(.4,0,.2,1), opacity .3s ease; }
+  #debugger.panel-closed{ transform: translateX(100%); opacity:0; pointer-events:none; }
+  @media(min-width:768px){
+    #debugger.panel-closed{ transform:none; margin-right:-360px; opacity:0; }
+  }
+  /* líneas de código del debugger */
+  .dbg-line{ white-space:pre; padding:1px 6px; border-left:2px solid transparent; border-radius:2px; }
+  .dbg-on{ background:rgba(56,189,248,.16); border-left-color:var(--accent); }
+  .dbg-ln{ display:inline-block; width:1.7em; color:#64748b; user-select:none; }
+  /* frames de la pila */
+  .dbg-frame{ padding:3px 6px; border-radius:6px; border:1px solid transparent; }
+  .dbg-frame-top{ background:rgba(56,189,248,.12); border-color:var(--accent); }
   .step-desc b{ color:var(--accent); }
   /* nodos SVG (generados dinámicamente por JS) */
   .n circle{fill:var(--node);stroke:var(--nodeStroke);stroke-width:2;transition:.25s}
@@ -61,6 +74,7 @@
   <button id="toggleMenu" class="btn btn-sm" aria-label="Mostrar/ocultar menú">☰ Menú</button>
   <h1 class="m-0 text-xl md:text-2xl text-accent">🌳 ABB Lab</h1>
   <span class="hidden sm:inline text-xs text-muted">Práctica interactiva de Árbol Binario de Búsqueda</span>
+  <button id="toggleDebug" class="btn btn-sm ml-auto" aria-label="Mostrar/ocultar debugger">🐞 Debug</button>
 </header>
 
 <div class="relative flex flex-1 min-h-0">
@@ -165,6 +179,22 @@
       </div>
     </div>
   </section>
+
+  <aside id="debugger" class="panel-closed absolute md:relative z-30 inset-y-0 right-0 w-[300px] md:w-[360px] md:shrink-0 h-full bg-panel border-l border-line p-3.5 flex flex-col gap-3 overflow-y-auto no-scrollbar shadow-2xl md:shadow-none">
+    <div class="card">
+      <h2 class="card-title">Debugger — código</h2>
+      <div id="dbgCode" class="font-mono text-[12px] leading-5 overflow-x-auto no-scrollbar">
+        <span class="text-muted">Elegí <b>Insertar</b>, <b>Buscar</b> o <b>In-orden</b> para ver la ejecución paso a paso.</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2 class="card-title">Pila de llamadas (recursión)</h2>
+      <div id="dbgStack" class="font-mono text-[12px] leading-5 flex flex-col gap-1"></div>
+    </div>
+    <div class="text-[11px] text-muted px-1">
+      La <b>pila</b> crece con cada llamada recursiva (arriba = ejecución actual) y se achica al retornar.
+    </div>
+  </aside>
 </div>
 
 <script>
@@ -319,6 +349,66 @@ function actualizarNodoInfo(h){
     `¿Es hoja?: <b style="color:var(--txt)">${grado(n)===0 ? 'Sí' : 'No'}</b>`;
 }
 
+/* ===== Debugger: código fuente + pila de llamadas ===== */
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+const CODE = {
+  insertarNodo:[
+    'def insertarNodo(self, nodoNuevo):',
+    '    if nodoNuevo.dato < self.dato:',
+    '        if self.tieneIzquierdo():',
+    '            self.izquierdo.insertarNodo(nodoNuevo)',
+    '        else:',
+    '            self.izquierdo = nodoNuevo',
+    '    elif nodoNuevo.dato > self.dato:',
+    '        if self.tieneDerecho():',
+    '            self.derecho.insertarNodo(nodoNuevo)',
+    '        else:',
+    '            self.derecho = nodoNuevo',
+  ],
+  buscarNodo:[
+    'def buscarNodo(self, datoBusc):',
+    '    nodoBuscado = None',
+    '    if self.dato == datoBusc:',
+    '        nodoBuscado = self',
+    '    elif datoBusc < self.dato:',
+    '        if self.tieneIzquierdo():',
+    '            nodoBuscado = self.izquierdo.buscarNodo(datoBusc)',
+    '    else:',
+    '        if self.tieneDerecho():',
+    '            nodoBuscado = self.derecho.buscarNodo(datoBusc)',
+    '    return nodoBuscado',
+  ],
+  inOrdenNodo:[
+    'def inOrdenNodo(self):',
+    '    if self.tieneIzquierdo():',
+    '        self.izquierdo.inOrdenNodo()',
+    '    print(self.dato)',
+    '    if self.tieneDerecho():',
+    '        self.derecho.inOrdenNodo()',
+  ],
+};
+function actualizarDebugger(step){
+  const codeEl = document.getElementById('dbgCode');
+  const stackEl = document.getElementById('dbgStack');
+  if(!step || !step.code || !CODE[step.code]){
+    codeEl.innerHTML = '<span class="text-muted">Elegí <b>Insertar</b>, <b>Buscar</b> o <b>In-orden</b> para ver la ejecución paso a paso.</span>';
+    stackEl.innerHTML = '';
+    return;
+  }
+  const lineas = CODE[step.code];
+  codeEl.innerHTML = lineas.map((ln,i)=>{
+    const on = (i+1)===step.line;
+    return `<div class="dbg-line${on?' dbg-on':''}"><span class="dbg-ln">${i+1}</span>${escHtml(ln)}</div>`;
+  }).join('');
+  const st = step.stack || [];
+  if(!st.length){ stackEl.innerHTML = '<span class="text-muted">(pila vacía)</span>'; return; }
+  stackEl.innerHTML = st.slice().reverse().map((f,idx)=>{
+    const top = idx===0;
+    const vars = Object.entries(f.vars).map(([k,v])=>`<span class="text-muted">${k}</span>=<b style="color:var(--txt)">${v}</b>`).join(', ');
+    return `<div class="dbg-frame${top?' dbg-frame-top':''}">${top?'▶ ':'&nbsp;&nbsp;'}<b style="color:var(--accent)">${f.label}</b>(${vars})</div>`;
+  }).join('');
+}
+
 /* ===== Motor paso a paso ===== */
 let steps = [], stepIdx = -1, playing = false, playTimer = null;
 const stepDesc = document.getElementById('stepDesc');
@@ -344,6 +434,7 @@ function irA(i){
   prog.textContent = `Paso ${i+1} de ${steps.length}`;
   render();
   actualizarNodoInfo(highlight);
+  actualizarDebugger(s);
   document.getElementById('btnPrev').disabled = i===0;
   document.getElementById('btnNext').disabled = i===steps.length-1;
 }
@@ -642,6 +733,117 @@ function stepsGrado(dato){
   return out;
 }
 
+/* ===== Tracers con debugger (código + pila de llamadas) ===== */
+function traceInsertar(dato){
+  const steps = [];
+  if(existe(dato)) return [{desc:`<b>${dato}</b> ya existe → no se inserta (ABB sin duplicados).`, highlight:{}, code:'insertarNodo', line:2, stack:[]}];
+  if(!raiz){
+    const nuevo = Nodo(dato);
+    steps.push({desc:`Árbol vacío → <b>${dato}</b> será la raíz.`, highlight:{}, code:'insertarNodo', line:1, stack:[], mutate:()=>{ raiz=nuevo; }});
+    steps.push({desc:`Raíz creada con <b>${dato}</b>. ✅`, highlight:{[nuevo.id]:'found'}, code:'insertarNodo', line:1, stack:[]});
+    return steps;
+  }
+  const camino=[], stack=[];
+  const snap=()=>stack.map(f=>({label:f.label, vars:{...f.vars}}));
+  (function rec(n){
+    stack.push({label:'insertarNodo', vars:{'self.dato':n.dato, 'nuevo':dato}});
+    camino.push(n.id);
+    steps.push({desc:`Entro a <b>insertarNodo</b> sobre <b>${n.dato}</b>. ¿<b>${dato} &lt; ${n.dato}</b>?`, highlight:pathHighlight(camino,n), code:'insertarNodo', line:2, stack:snap()});
+    if(dato < n.dato){
+      steps.push({desc:`Sí → rama <span class="badge izq">IZQUIERDA</span>. ¿Tiene hijo izquierdo?`, highlight:pathHighlight(camino,n), code:'insertarNodo', line:3, stack:snap()});
+      if(n.izq){
+        steps.push({desc:`Tiene → <b>llamada recursiva</b> a la izquierda (<b>${n.izq.dato}</b>). Se apila un frame.`, highlight:pathHighlight(camino,n), code:'insertarNodo', line:4, stack:snap()});
+        rec(n.izq);
+      } else {
+        const nuevo = Nodo(dato);
+        steps.push({desc:`No tiene → <b>self.izquierdo = ${dato}</b>. Insertado. ✅`, highlight:(()=>{const h=pathHighlight(camino); h[nuevo.id]='found'; return h;})(), code:'insertarNodo', line:6, stack:snap(), mutate:()=>{ n.izq=nuevo; }});
+      }
+    } else {
+      steps.push({desc:`No es menor → evalúo <b>elif ${dato} &gt; ${n.dato}</b> → verdadero. Rama <span class="badge der">DERECHA</span>.`, highlight:pathHighlight(camino,n), code:'insertarNodo', line:7, stack:snap()});
+      steps.push({desc:`¿Tiene hijo derecho?`, highlight:pathHighlight(camino,n), code:'insertarNodo', line:8, stack:snap()});
+      if(n.der){
+        steps.push({desc:`Tiene → <b>llamada recursiva</b> a la derecha (<b>${n.der.dato}</b>). Se apila un frame.`, highlight:pathHighlight(camino,n), code:'insertarNodo', line:9, stack:snap()});
+        rec(n.der);
+      } else {
+        const nuevo = Nodo(dato);
+        steps.push({desc:`No tiene → <b>self.derecho = ${dato}</b>. Insertado. ✅`, highlight:(()=>{const h=pathHighlight(camino); h[nuevo.id]='found'; return h;})(), code:'insertarNodo', line:11, stack:snap(), mutate:()=>{ n.der=nuevo; }});
+      }
+    }
+    const cur = n.dato;
+    stack.pop();
+    steps.push({desc:`Termina <b>insertarNodo(${cur})</b> y retorna. Se desapila el frame.`, highlight:pathHighlight(camino,n), code:'insertarNodo', line:1, stack:snap()});
+    camino.pop();
+  })(raiz);
+  return steps;
+}
+
+function traceBuscar(dato){
+  if(!raiz) return [{desc:'Árbol vacío, nada que buscar.', highlight:{}, code:'buscarNodo', line:1, stack:[], out:`buscar(${dato}) → False`}];
+  const steps=[], camino=[], stack=[];
+  const snap=()=>stack.map(f=>({label:f.label, vars:{...f.vars}}));
+  (function rec(n){
+    stack.push({label:'buscarNodo', vars:{'self.dato':n.dato, 'datoBusc':dato}});
+    camino.push(n.id);
+    steps.push({desc:`Entro a <b>buscarNodo</b> sobre <b>${n.dato}</b>. <code>nodoBuscado = None</code>.`, highlight:pathHighlight(camino,n), code:'buscarNodo', line:2, stack:snap()});
+    steps.push({desc:`¿<b>${n.dato} == ${dato}</b>?`, highlight:pathHighlight(camino,n), code:'buscarNodo', line:3, stack:snap()});
+    if(n.dato===dato){
+      steps.push({desc:`Sí → <b>nodoBuscado = self</b>. ¡Encontrado! <span class="badge ok">OK</span>`, highlight:(()=>{const h=pathHighlight(camino);h[n.id]='found';return h;})(), code:'buscarNodo', line:4, stack:snap(), out:`buscar(${dato}) → True`});
+    } else if(dato < n.dato){
+      steps.push({desc:`No. ¿<b>${dato} &lt; ${n.dato}</b>? Sí → <span class="badge izq">IZQUIERDA</span>.`, highlight:pathHighlight(camino,n), code:'buscarNodo', line:5, stack:snap()});
+      if(n.izq){
+        steps.push({desc:`Tiene hijo izquierdo → <b>llamada recursiva</b>.`, highlight:pathHighlight(camino,n), code:'buscarNodo', line:7, stack:snap()});
+        rec(n.izq);
+      } else {
+        steps.push({desc:`No tiene hijo izquierdo → queda <b>None</b>. No está. <span class="badge bad">NO ESTÁ</span>`, highlight:pathHighlight(camino,n), code:'buscarNodo', line:6, stack:snap(), out:`buscar(${dato}) → False`});
+      }
+    } else {
+      steps.push({desc:`No, es mayor → rama <b>else</b> (<span class="badge der">DERECHA</span>).`, highlight:pathHighlight(camino,n), code:'buscarNodo', line:8, stack:snap()});
+      if(n.der){
+        steps.push({desc:`Tiene hijo derecho → <b>llamada recursiva</b>.`, highlight:pathHighlight(camino,n), code:'buscarNodo', line:10, stack:snap()});
+        rec(n.der);
+      } else {
+        steps.push({desc:`No tiene hijo derecho → queda <b>None</b>. No está. <span class="badge bad">NO ESTÁ</span>`, highlight:pathHighlight(camino,n), code:'buscarNodo', line:9, stack:snap(), out:`buscar(${dato}) → False`});
+      }
+    }
+    const cur = n.dato;
+    stack.pop();
+    steps.push({desc:`<b>return nodoBuscado</b> → retorna de buscarNodo(${cur}). Se desapila.`, highlight:pathHighlight(camino,n), code:'buscarNodo', line:11, stack:snap()});
+    camino.pop();
+  })(raiz);
+  return steps;
+}
+
+function traceInOrden(){
+  if(!raiz) return [{desc:'Árbol vacío.', highlight:{}, code:'inOrdenNodo', line:1, stack:[], out:'[]'}];
+  const steps=[], stack=[], visitados={}, acc=[];
+  const snap=()=>stack.map(f=>({label:f.label, vars:{...f.vars}}));
+  const hlCur=(id)=>{ const h={}; Object.assign(h,visitados); h[id]='current'; return h; };
+  (function rec(n){
+    stack.push({label:'inOrdenNodo', vars:{'self.dato':n.dato}});
+    steps.push({desc:`Entro a <b>inOrdenNodo</b> sobre <b>${n.dato}</b>. ¿Tiene hijo izquierdo?`, highlight:hlCur(n.id), code:'inOrdenNodo', line:2, stack:snap(), out:'['+acc.join(', ')+']'});
+    if(n.izq){
+      steps.push({desc:`Sí → <b>primero</b> recorro la izquierda (<b>${n.izq.dato}</b>). Se apila un frame.`, highlight:hlCur(n.id), code:'inOrdenNodo', line:3, stack:snap()});
+      rec(n.izq);
+    } else {
+      steps.push({desc:`No hay hijo izquierdo. Sigo.`, highlight:hlCur(n.id), code:'inOrdenNodo', line:2, stack:snap()});
+    }
+    acc.push(n.dato);
+    steps.push({desc:`<b>print(${n.dato})</b> — imprimo el nodo (izq → <b>RAÍZ</b> → der).`, highlight:hlCur(n.id), code:'inOrdenNodo', line:4, stack:snap(), out:'['+acc.join(', ')+']'});
+    visitados[n.id]='visited';
+    if(n.der){
+      steps.push({desc:`¿Tiene hijo derecho? Sí → recorro la derecha (<b>${n.der.dato}</b>).`, highlight:hlCur(n.der.id), code:'inOrdenNodo', line:6, stack:snap()});
+      rec(n.der);
+    } else {
+      steps.push({desc:`No hay hijo derecho.`, highlight:{...visitados}, code:'inOrdenNodo', line:5, stack:snap()});
+    }
+    const cur = n.dato;
+    stack.pop();
+    steps.push({desc:`Termina <b>inOrdenNodo(${cur})</b> y retorna. Se desapila.`, highlight:{...visitados}, code:'inOrdenNodo', line:6, stack:snap()});
+  })(raiz);
+  steps.push({desc:`Recorrido completo. <b style="color:var(--ok)">In-orden en un ABB = orden creciente.</b>`, highlight:{...visitados}, code:'inOrdenNodo', line:1, stack:[], out:'['+acc.join(', ')+']'});
+  return steps;
+}
+
 /* ===== Conexión UI ===== */
 function leerValor(){ const v = parseInt(document.getElementById('valor').value,10); return Number.isNaN(v)?null:v; }
 function leerValor2(){ const v = parseInt(document.getElementById('valor2').value,10); return Number.isNaN(v)?null:v; }
@@ -649,11 +851,11 @@ function leerValor2(){ const v = parseInt(document.getElementById('valor2').valu
 document.querySelectorAll('[data-op]').forEach(b=>{
   b.addEventListener('click', ()=>{
     const op = b.dataset.op;
-    if(op==='insertar'){ const v=leerValor(); if(v===null)return; cargarSteps(stepsInsertar(v)); document.getElementById('valor').value = Math.floor(Math.random()*99)+1; }
-    else if(op==='buscar'){ const v=leerValor(); if(v===null)return; cargarSteps(stepsBuscar(v)); }
+    if(op==='insertar'){ const v=leerValor(); if(v===null)return; cargarSteps(traceInsertar(v)); abrirDebugSiDesktop(); document.getElementById('valor').value = Math.floor(Math.random()*99)+1; }
+    else if(op==='buscar'){ const v=leerValor(); if(v===null)return; cargarSteps(traceBuscar(v)); abrirDebugSiDesktop(); }
     else if(op==='eliminar'){ const v=leerValor(); if(v===null)return; cargarSteps(stepsEliminar(v)); }
     else if(op==='pre'){ cargarSteps(stepsRecorrido('pre')); }
-    else if(op==='in'){ cargarSteps(stepsRecorrido('in')); }
+    else if(op==='in'){ cargarSteps(traceInOrden()); abrirDebugSiDesktop(); }
     else if(op==='post'){ cargarSteps(stepsRecorrido('post')); }
     else if(op==='ejemplo'){ raiz=null; [50,30,70,20,40,60,80,10,25].forEach(x=>insertar(x)); salida.textContent='—'; cargarSteps([{desc:'Árbol de ejemplo cargado. Probá recorridos, buscar o eliminar.', highlight:{}}]); }
     else if(op==='aleatorio'){ const v=Math.floor(Math.random()*99)+1; document.getElementById('valor').value=v; cargarSteps(stepsInsertar(v)); }
@@ -680,6 +882,14 @@ document.getElementById('toggleMenu').addEventListener('click', ()=>{
 // cerrado por defecto en pantallas chicas
 if(window.matchMedia('(max-width: 767px)').matches){ sidebar.classList.add('menu-closed'); }
 
+const dbgPanel = document.getElementById('debugger');
+document.getElementById('toggleDebug').addEventListener('click', ()=>{
+  dbgPanel.classList.toggle('panel-closed');
+});
+function abrirDebugSiDesktop(){
+  if(window.matchMedia('(min-width: 768px)').matches){ dbgPanel.classList.remove('panel-closed'); }
+}
+
 /* ===== Botones de zoom ===== */
 function zoomCentro(factor){
   const vb = svg.viewBox.baseVal;
@@ -692,7 +902,7 @@ document.getElementById('zoomReset').addEventListener('click', resetVista);
 document.getElementById('btnNext').addEventListener('click', siguiente);
 document.getElementById('btnPrev').addEventListener('click', anterior);
 document.getElementById('btnPlay').addEventListener('click', play);
-document.getElementById('valor').addEventListener('keydown', e=>{ if(e.key==='Enter'){ const v=leerValor(); if(v!==null){ cargarSteps(stepsInsertar(v)); document.getElementById('valor').value=Math.floor(Math.random()*99)+1; } } });
+document.getElementById('valor').addEventListener('keydown', e=>{ if(e.key==='Enter'){ const v=leerValor(); if(v!==null){ cargarSteps(traceInsertar(v)); abrirDebugSiDesktop(); document.getElementById('valor').value=Math.floor(Math.random()*99)+1; } } });
 
 render();
 </script>
