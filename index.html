@@ -54,6 +54,15 @@
   .n.visited circle{fill:#475569}
   .edge{stroke:var(--edge);stroke-width:2}
   .empty{color:var(--muted);font-size:13px;text-align:center;padding:20px}
+  /* barra paso a paso dentro del dashboard */
+  .stepbar{position:absolute;left:16px;right:16px;bottom:16px;background:rgba(30,41,59,.92);backdrop-filter:blur(6px);border:1px solid #334155;border-radius:12px;padding:12px 16px;display:flex;gap:16px;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  .stepbar .step-desc{flex:1;min-height:auto;margin:0}
+  .stepbar-controls{display:flex;flex-direction:column;gap:6px;align-items:center;min-width:230px}
+  @media(max-width:760px){ .stepbar{flex-direction:column;align-items:stretch} .stepbar-controls{min-width:0} }
+  /* crédito autor */
+  .credit{margin-top:auto;padding-top:10px;font-size:11px;color:var(--muted);text-align:center;border-top:1px solid #334155}
+  .credit a{color:var(--accent);text-decoration:none}
+  .credit a:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -109,20 +118,6 @@
     </div>
 
     <div class="card">
-      <h2>Paso a paso</h2>
-      <div id="stepDesc" class="step-desc">Insertá números o cargá el ejemplo para empezar.</div>
-      <div class="row" style="justify-content:center;margin-top:6px">
-        <button id="btnPrev" class="small">◀ Anterior</button>
-        <button id="btnPlay" class="small primary">▶ Auto</button>
-        <button id="btnNext" class="small">Siguiente ▶</button>
-      </div>
-      <div class="prog" id="prog"></div>
-      <div class="speed">Velocidad
-        <input id="speed" type="range" min="200" max="1600" step="100" value="800">
-      </div>
-    </div>
-
-    <div class="card">
       <h2>Salida</h2>
       <div id="salida" class="out">—</div>
     </div>
@@ -138,12 +133,32 @@
       <span><i class="dot" style="background:var(--ok)"></i>encontrado</span>
       <span><i class="dot" style="background:var(--bad)"></i>a eliminar</span>
     </div>
+
+    <div class="credit">
+      Proyecto con fines educativos.<br>
+      Desarrollado por <a href="https://agusfmartinez.vercel.app/" target="_blank" rel="noopener">Agustín Martínez</a>
+    </div>
   </aside>
 
   <section class="stage">
     <svg id="svg"></svg>
     <div id="emptyMsg" class="empty" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">
       Árbol vacío. Insertá un número o cargá el ejemplo.
+    </div>
+
+    <div class="stepbar">
+      <div id="stepDesc" class="step-desc">Insertá números o cargá el ejemplo para empezar.</div>
+      <div class="stepbar-controls">
+        <div class="row" style="justify-content:center">
+          <button id="btnPrev" class="small">◀ Anterior</button>
+          <button id="btnPlay" class="small primary">▶ Auto</button>
+          <button id="btnNext" class="small">Siguiente ▶</button>
+        </div>
+        <div class="prog" id="prog"></div>
+        <div class="speed">Velocidad
+          <input id="speed" type="range" min="200" max="1600" step="100" value="800">
+        </div>
+      </div>
     </div>
   </section>
 </div>
