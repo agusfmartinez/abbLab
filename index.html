@@ -3,48 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ABB Lab - Práctica Arboles Binarios interactiva</title>
-<style>
-  :root{
-    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --txt:#e2e8f0; --muted:#94a3b8;
-    --accent:#38bdf8; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --edge:#475569;
-    --node:#334155; --nodeStroke:#64748b;
+<title>ABB Lab - Práctica interactiva de Árboles Binarios</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: { colors: {
+      bg:'#0f172a', panel:'#1e293b', panel2:'#273449',
+      txt:'#e2e8f0', muted:'#94a3b8', accent:'#38bdf8',
+      ok:'#22c55e', bad:'#ef4444', line:'#334155'
+    } } }
+  };
+</script>
+<style type="text/tailwindcss">
+  @layer components {
+    .card       { @apply bg-panel2 border border-line rounded-xl p-3; }
+    .card-title { @apply m-0 mb-2 text-[13px] uppercase tracking-wide text-muted font-semibold; }
+    .btn        { @apply cursor-pointer border border-slate-600 bg-slate-700 text-txt px-3 py-2 rounded-lg text-[13px] transition hover:bg-slate-600 hover:border-accent disabled:opacity-40 disabled:cursor-not-allowed; }
+    .btn-primary{ @apply bg-accent text-[#04283a] border-accent font-semibold hover:brightness-110; }
+    .btn-sm     { @apply px-2.5 py-1.5 text-xs; }
+    .field      { @apply px-2 py-2 rounded-lg border border-slate-600 bg-bg text-txt text-sm; }
   }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt);height:100vh;display:flex;flex-direction:column}
-  header{padding:10px 16px;background:var(--panel);border-bottom:1px solid #334155;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-  header h1{margin:0;color:var(--accent)}
-  header .hint{font-size:12px;color:var(--muted)}
-  .main{flex:1;display:flex;min-height:0}
-  .side{width:340px;background:var(--panel);border-right:1px solid #334155;padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
-  .stage{flex:1;position:relative;overflow:hidden}
-  svg{width:100%;height:100%;display:block}
-  .card{background:var(--panel2);border:1px solid #334155;border-radius:10px;padding:12px}
-  .card h2{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  input[type=number]{width:90px;padding:8px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:var(--txt);font-size:14px}
-  button{cursor:pointer;border:1px solid #475569;background:#334155;color:var(--txt);padding:8px 12px;border-radius:8px;font-size:13px;transition:.15s}
-  button:hover{background:#3e4c63;border-color:var(--accent)}
-  button:disabled{opacity:.4;cursor:not-allowed}
-  button.primary{background:var(--accent);color:#04283a;border-color:var(--accent);font-weight:600}
-  button.primary:hover{filter:brightness(1.1)}
-  button.small{padding:6px 9px;font-size:12px}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .step-desc{font-size:14px;line-height:1.5;min-height:64px}
-  .step-desc b{color:var(--accent)}
-  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;margin-left:6px}
-  .badge.izq{background:#1e3a8a;color:#bfdbfe}
-  .badge.der{background:#7c2d12;color:#fed7aa}
-  .badge.ok{background:#14532d;color:#bbf7d0}
-  .badge.bad{background:#7f1d1d;color:#fecaca}
-  .out{font-family:ui-monospace,Consolas,monospace;font-size:15px;color:var(--ok);word-break:break-word;min-height:22px}
-  .prog{font-size:12px;color:var(--muted);text-align:center}
-  .legend{font-size:12px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
-  .legend span{display:flex;align-items:center;gap:5px}
-  .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
-  .speed{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
-  input[type=range]{accent-color:var(--accent)}
-  /* nodos */
+</style>
+<style>
+  /* variables usadas por el contenido inyectado desde JS */
+  :root{ --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --txt:#e2e8f0; --muted:#94a3b8;
+         --accent:#38bdf8; --ok:#22c55e; --bad:#ef4444; --edge:#475569; --node:#334155; --nodeStroke:#64748b; }
+  /* scrollbar oculto pero scroll activo */
+  .no-scrollbar{ scrollbar-width:none; -ms-overflow-style:none; }
+  .no-scrollbar::-webkit-scrollbar{ display:none; }
+  .step-desc b{ color:var(--accent); }
+  /* nodos SVG (generados dinámicamente por JS) */
   .n circle{fill:var(--node);stroke:var(--nodeStroke);stroke-width:2;transition:.25s}
   .n text{fill:var(--txt);font-size:15px;font-weight:600;text-anchor:middle;dominant-baseline:central;pointer-events:none}
   .n.current circle{fill:var(--accent);stroke:#fff;stroke-width:3;r:24}
@@ -53,109 +41,108 @@
   .n.target circle{fill:var(--bad);stroke:#fecaca;stroke-width:3}
   .n.visited circle{fill:#475569}
   .edge{stroke:var(--edge);stroke-width:2}
-  .empty{color:var(--muted);font-size:13px;text-align:center;padding:20px}
-  /* barra paso a paso dentro del dashboard */
-  .stepbar{position:absolute;left:16px;right:16px;bottom:16px;background:rgba(30,41,59,.92);backdrop-filter:blur(6px);border:1px solid #334155;border-radius:12px;padding:12px 16px;display:flex;gap:16px;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,.35)}
-  .stepbar .step-desc{flex:1;min-height:auto;margin:0}
-  .stepbar-controls{display:flex;flex-direction:column;gap:6px;align-items:center;min-width:230px}
-  @media(max-width:760px){ .stepbar{flex-direction:column;align-items:stretch} .stepbar-controls{min-width:0} }
-  /* crédito autor */
-  .credit{margin-top:auto;padding-top:10px;font-size:11px;color:var(--muted);text-align:center;border-top:1px solid #334155}
-  .credit a{color:var(--accent);text-decoration:none}
-  .credit a:hover{text-decoration:underline}
+  /* badges inyectados por JS en las explicaciones */
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;margin-left:6px}
+  .badge.izq{background:#1e3a8a;color:#bfdbfe}
+  .badge.der{background:#7c2d12;color:#fed7aa}
+  .badge.ok{background:#14532d;color:#bbf7d0}
+  .badge.bad{background:#7f1d1d;color:#fecaca}
+  input[type=range]{accent-color:var(--accent)}
 </style>
 </head>
-<body>
-<header>
-  <h1>🌳 ABB Lab </h1>
-  <span class="hint">Práctica interactiva de Árbol Binario de Búsqueda</span>
+<body class="m-0 min-h-screen md:h-screen flex flex-col bg-bg text-txt font-sans">
+<header class="px-4 py-2.5 bg-panel border-b border-line flex items-center gap-3 flex-wrap">
+  <h1 class="m-0 text-xl md:text-2xl text-accent">🌳 ABB Lab</h1>
+  <span class="text-xs text-muted">Práctica interactiva de Árbol Binario de Búsqueda</span>
 </header>
-<div class="main">
-  <aside class="side">
-    <div class="card">
-      <h2>Operaciones</h2>
-      <div class="row">
-        <input id="valor" type="number" placeholder="nº" value="50">
-        <button class="primary" data-op="insertar">Insertar</button>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <button data-op="buscar">Buscar</button>
-        <button data-op="eliminar">Eliminar</button>
-      </div>
-      <div class="grid2" style="margin-top:10px">
-        <button data-op="pre">Pre-orden</button>
-        <button data-op="in">In-orden</button>
-        <button data-op="post">Post-orden</button>
-        <button data-op="ejemplo">Ejemplo</button>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <button class="small" data-op="aleatorio">+ Aleatorio</button>
-        <button class="small" data-op="vaciar">Vaciar</button>
-      </div>
-    </div>
+
+<div class="flex flex-col md:flex-row flex-1 min-h-0">
+  <aside class="w-full md:w-[340px] md:shrink-0 bg-panel border-b md:border-b-0 md:border-r border-line p-3.5 flex flex-col gap-3.5 overflow-y-auto no-scrollbar max-h-[42vh] md:max-h-none">
 
     <div class="card">
-      <h2>Consultas (métodos del ABB)</h2>
-      <div class="grid2">
-        <button class="small" data-op="minimo">Mínimo</button>
-        <button class="small" data-op="maximo">Máximo</button>
-        <button class="small" data-op="peso">Peso</button>
-        <button class="small" data-op="profundidad">Altura</button>
-        <button class="small" data-op="cantidadHojas">Cantidad hojas</button>
-        <button class="small" data-op="estaVacio">¿Está vacío?</button>
-        <button class="small" data-op="predecesor">Predecesor (raíz)</button>
-        <button class="small" data-op="sucesor">Sucesor (raíz)</button>
-        <button class="small" data-op="listaDePares">Lista de pares</button>
+      <h2 class="card-title">Operaciones</h2>
+      <div class="flex gap-2 flex-wrap items-center">
+        <input id="valor" type="number" placeholder="nº" value="50" class="field w-24">
+        <button class="btn btn-primary" data-op="insertar">Insertar</button>
       </div>
-      <div class="row" style="margin-top:10px">
-        <input id="valor2" type="number" placeholder="nº / nivel" style="width:110px">
-        <button class="small" data-op="profundidadDato">Prof. del dato</button>
+      <div class="flex gap-2 flex-wrap mt-2">
+        <button class="btn" data-op="buscar">Buscar</button>
+        <button class="btn" data-op="eliminar">Eliminar</button>
       </div>
-      <div class="row" style="margin-top:8px">
-        <button class="small" data-op="cantidadNodosNivel">Nodos en nivel ↑</button>
+      <div class="grid grid-cols-2 gap-2 mt-2.5">
+        <button class="btn" data-op="pre">Pre-orden</button>
+        <button class="btn" data-op="in">In-orden</button>
+        <button class="btn" data-op="post">Post-orden</button>
+        <button class="btn" data-op="ejemplo">Ejemplo</button>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px">Prof. del dato / Nodos en nivel usan el campo de arriba.</div>
+      <div class="flex gap-2 flex-wrap mt-2">
+        <button class="btn btn-sm" data-op="aleatorio">+ Aleatorio</button>
+        <button class="btn btn-sm" data-op="vaciar">Vaciar</button>
+      </div>
     </div>
 
     <div class="card">
-      <h2>Salida</h2>
-      <div id="salida" class="out">—</div>
+      <h2 class="card-title">Consultas (métodos del ABB)</h2>
+      <div class="grid grid-cols-2 gap-2">
+        <button class="btn btn-sm" data-op="minimo">Mínimo</button>
+        <button class="btn btn-sm" data-op="maximo">Máximo</button>
+        <button class="btn btn-sm" data-op="peso">Peso</button>
+        <button class="btn btn-sm" data-op="profundidad">Altura</button>
+        <button class="btn btn-sm" data-op="cantidadHojas">Cantidad hojas</button>
+        <button class="btn btn-sm" data-op="estaVacio">¿Está vacío?</button>
+        <button class="btn btn-sm" data-op="predecesor">Predecesor (raíz)</button>
+        <button class="btn btn-sm" data-op="sucesor">Sucesor (raíz)</button>
+        <button class="btn btn-sm" data-op="listaDePares">Lista de pares</button>
+      </div>
+      <div class="flex gap-2 flex-wrap items-center mt-2.5">
+        <input id="valor2" type="number" placeholder="nº / nivel" class="field w-28">
+        <button class="btn btn-sm" data-op="profundidadDato">Prof. del dato</button>
+      </div>
+      <div class="flex gap-2 flex-wrap mt-2">
+        <button class="btn btn-sm" data-op="cantidadNodosNivel">Nodos en nivel ↑</button>
+      </div>
+      <div class="text-[11px] text-muted mt-1.5">Prof. del dato / Nodos en nivel usan el campo de arriba.</div>
     </div>
 
     <div class="card">
-      <h2>Datos del árbol</h2>
-      <div id="stats" style="font-size:13px;line-height:1.7;color:var(--muted)"></div>
+      <h2 class="card-title">Salida</h2>
+      <div id="salida" class="font-mono text-[15px] text-ok break-words min-h-[22px]">—</div>
     </div>
 
-    <div class="legend">
-      <span><i class="dot" style="background:var(--accent)"></i>actual</span>
-      <span><i class="dot" style="background:#0369a1"></i>camino</span>
-      <span><i class="dot" style="background:var(--ok)"></i>encontrado</span>
-      <span><i class="dot" style="background:var(--bad)"></i>a eliminar</span>
+    <div class="card">
+      <h2 class="card-title">Datos del árbol</h2>
+      <div id="stats" class="text-[13px] leading-7 text-muted"></div>
     </div>
 
-    <div class="credit">
+    <div class="text-xs text-muted flex gap-3.5 flex-wrap px-1">
+      <span class="flex items-center gap-1.5"><i class="w-3 h-3 rounded-full inline-block bg-accent"></i>actual</span>
+      <span class="flex items-center gap-1.5"><i class="w-3 h-3 rounded-full inline-block" style="background:#0369a1"></i>camino</span>
+      <span class="flex items-center gap-1.5"><i class="w-3 h-3 rounded-full inline-block bg-ok"></i>encontrado</span>
+      <span class="flex items-center gap-1.5"><i class="w-3 h-3 rounded-full inline-block bg-bad"></i>a eliminar</span>
+    </div>
+
+    <div class="mt-auto pt-2.5 text-[11px] text-muted text-center border-t border-line">
       Proyecto con fines educativos.<br>
-      Desarrollado por <a href="https://agusfmartinez.vercel.app/" target="_blank" rel="noopener">Agustín Martínez</a>
+      Desarrollado por <a href="https://agusfmartinez.vercel.app/" target="_blank" rel="noopener" class="text-accent no-underline hover:underline">Agustín Martínez</a>
     </div>
   </aside>
 
-  <section class="stage">
-    <svg id="svg"></svg>
-    <div id="emptyMsg" class="empty" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">
+  <section class="relative flex-1 overflow-hidden min-h-[55vh] md:min-h-0">
+    <svg id="svg" class="w-full h-full block"></svg>
+    <div id="emptyMsg" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-muted text-sm text-center px-5">
       Árbol vacío. Insertá un número o cargá el ejemplo.
     </div>
 
-    <div class="stepbar">
-      <div id="stepDesc" class="step-desc">Insertá números o cargá el ejemplo para empezar.</div>
-      <div class="stepbar-controls">
-        <div class="row" style="justify-content:center">
-          <button id="btnPrev" class="small">◀ Anterior</button>
-          <button id="btnPlay" class="small primary">▶ Auto</button>
-          <button id="btnNext" class="small">Siguiente ▶</button>
+    <div class="absolute left-3 right-3 md:left-4 md:right-4 bottom-3 md:bottom-4 bg-panel/90 backdrop-blur border border-line rounded-xl p-3 md:px-4 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center shadow-2xl">
+      <div id="stepDesc" class="step-desc flex-1 text-sm leading-relaxed">Insertá números o cargá el ejemplo para empezar.</div>
+      <div class="flex flex-col gap-1.5 items-center md:min-w-[230px]">
+        <div class="flex gap-2 justify-center">
+          <button id="btnPrev" class="btn btn-sm">◀ Anterior</button>
+          <button id="btnPlay" class="btn btn-sm btn-primary">▶ Auto</button>
+          <button id="btnNext" class="btn btn-sm">Siguiente ▶</button>
         </div>
-        <div class="prog" id="prog"></div>
-        <div class="speed">Velocidad
+        <div id="prog" class="text-xs text-muted text-center"></div>
+        <div class="flex items-center gap-2 text-xs text-muted">Velocidad
           <input id="speed" type="range" min="200" max="1600" step="100" value="800">
         </div>
       </div>
