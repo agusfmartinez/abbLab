@@ -271,7 +271,8 @@ function actualizarNodoInfo(h){
     `Dato: <b style="color:var(--txt)">${n.dato}</b><br>`+
     `Izquierdo: <b style="color:var(--txt)">${izq}</b><br>`+
     `Derecho: <b style="color:var(--txt)">${der}</b><br>`+
-    `Grado: <b style="color:var(--txt)">${grado(n)}</b>`;
+    `Grado: <b style="color:var(--txt)">${grado(n)}</b><br>`+
+    `¿Es hoja?: <b style="color:var(--txt)">${grado(n)===0 ? 'Sí' : 'No'}</b>`;
 }
 
 /* ===== Motor paso a paso ===== */
