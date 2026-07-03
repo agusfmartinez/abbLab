@@ -31,6 +31,12 @@
   /* scrollbar oculto pero scroll activo */
   .no-scrollbar{ scrollbar-width:none; -ms-overflow-style:none; }
   .no-scrollbar::-webkit-scrollbar{ display:none; }
+  /* animación suave del menú lateral */
+  #sidebar{ transition: margin-left .35s cubic-bezier(.4,0,.2,1), transform .35s cubic-bezier(.4,0,.2,1), opacity .3s ease; }
+  #sidebar.menu-closed{ transform: translateX(-100%); opacity:0; pointer-events:none; }
+  @media(min-width:768px){
+    #sidebar.menu-closed{ transform:none; margin-left:-340px; opacity:0; }
+  }
   .step-desc b{ color:var(--accent); }
   /* nodos SVG (generados dinámicamente por JS) */
   .n circle{fill:var(--node);stroke:var(--nodeStroke);stroke-width:2;transition:.25s}
@@ -50,14 +56,15 @@
   input[type=range]{accent-color:var(--accent)}
 </style>
 </head>
-<body class="m-0 min-h-screen md:h-screen flex flex-col bg-bg text-txt font-sans">
+<body class="m-0 h-screen flex flex-col bg-bg text-txt font-sans overflow-hidden">
 <header class="px-4 py-2.5 bg-panel border-b border-line flex items-center gap-3 flex-wrap">
+  <button id="toggleMenu" class="btn btn-sm" aria-label="Mostrar/ocultar menú">☰ Menú</button>
   <h1 class="m-0 text-xl md:text-2xl text-accent">🌳 ABB Lab</h1>
-  <span class="text-xs text-muted">Práctica interactiva de Árbol Binario de Búsqueda</span>
+  <span class="hidden sm:inline text-xs text-muted">Práctica interactiva de Árbol Binario de Búsqueda</span>
 </header>
 
-<div class="flex flex-col md:flex-row flex-1 min-h-0">
-  <aside class="w-full md:w-[340px] md:shrink-0 bg-panel border-b md:border-b-0 md:border-r border-line p-3.5 flex flex-col gap-3.5 overflow-y-auto no-scrollbar max-h-[42vh] md:max-h-none">
+<div class="relative flex flex-1 min-h-0">
+  <aside id="sidebar" class="absolute md:relative z-30 inset-y-0 left-0 w-[280px] md:w-[340px] md:shrink-0 h-full bg-panel border-r border-line p-3.5 flex flex-col gap-3.5 overflow-y-auto no-scrollbar shadow-2xl md:shadow-none">
 
     <div class="card">
       <h2 class="card-title">Operaciones</h2>
@@ -98,15 +105,11 @@
         <input id="valor2" type="number" placeholder="nº / nivel" class="field w-28">
         <button class="btn btn-sm" data-op="profundidadDato">Prof. del dato</button>
       </div>
-      <div class="flex gap-2 flex-wrap mt-2">
+      <div class="grid grid-cols-2 gap-2 mt-2">
         <button class="btn btn-sm" data-op="cantidadNodosNivel">Nodos en nivel ↑</button>
+        <button class="btn btn-sm" data-op="grado">Grado del dato ↑</button>
       </div>
       <div class="text-[11px] text-muted mt-1.5">Prof. del dato / Nodos en nivel usan el campo de arriba.</div>
-    </div>
-
-    <div class="card">
-      <h2 class="card-title">Salida</h2>
-      <div id="salida" class="font-mono text-[15px] text-ok break-words min-h-[22px]">—</div>
     </div>
 
     <div class="card">
@@ -127,15 +130,26 @@
     </div>
   </aside>
 
-  <section class="relative flex-1 overflow-hidden min-h-[55vh] md:min-h-0">
+  <section class="relative flex-1 overflow-hidden">
     <svg id="svg" class="w-full h-full block"></svg>
     <div id="emptyMsg" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-muted text-sm text-center px-5">
       Árbol vacío. Insertá un número o cargá el ejemplo.
     </div>
 
-    <div class="absolute left-3 right-3 md:left-4 md:right-4 bottom-3 md:bottom-4 bg-panel/90 backdrop-blur border border-line rounded-xl p-3 md:px-4 flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center shadow-2xl">
-      <div id="stepDesc" class="step-desc flex-1 text-sm leading-relaxed">Insertá números o cargá el ejemplo para empezar.</div>
-      <div class="flex flex-col gap-1.5 items-center md:min-w-[230px]">
+    <div class="absolute top-3 right-3 flex flex-col gap-3 w-[min(240px,55vw)]">
+      <div class="bg-panel/90 backdrop-blur border border-line rounded-xl p-3 shadow-2xl">
+        <h2 class="card-title">Salida</h2>
+        <div id="salida" class="font-mono text-[15px] text-ok break-words min-h-[22px]">—</div>
+      </div>
+      <div class="bg-panel/90 backdrop-blur border border-line rounded-xl p-3 shadow-2xl">
+        <h2 class="card-title">Datos del nodo</h2>
+        <div id="nodoInfo" class="text-[13px] leading-7 text-muted"><span class="text-muted">Sin nodo activo</span></div>
+      </div>
+    </div>
+
+    <div class="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] md:w-auto md:max-w-2xl bg-panel/90 backdrop-blur border border-line rounded-xl p-3 md:px-4 flex flex-col gap-3 items-stretch md:items-center shadow-2xl">
+      <div id="stepDesc" class="step-desc text-sm leading-relaxed text-center">Insertá números o cargá el ejemplo para empezar.</div>
+      <div class="flex flex-col gap-1.5 items-center">
         <div class="flex gap-2 justify-center">
           <button id="btnPrev" class="btn btn-sm">◀ Anterior</button>
           <button id="btnPlay" class="btn btn-sm btn-primary">▶ Auto</button>
@@ -180,6 +194,8 @@ function altura(n){ if(!n) return -1; if(!n.izq&&!n.der) return 0; return 1+Math
 function hojas(n){ if(!n) return 0; if(!n.izq&&!n.der) return 1; return hojas(n.izq)+hojas(n.der); }
 function maximoNodo(n){ while(n.der) n=n.der; return n; }
 function minimoNodo(n){ while(n.izq) n=n.izq; return n; }
+function grado(n){ return (n.izq?1:0)+(n.der?1:0); }
+function nodoPorId(id){ let r=null; (function w(n){ if(!n||r)return; if(n.id===id){r=n;return;} w(n.izq); w(n.der); })(raiz); return r; }
 
 /* ===== Layout (x por in-orden, y por profundidad) ===== */
 const NX = 60, NY = 78, MARGIN = 40;
@@ -232,11 +248,30 @@ function actualizarStats(){
   const s = document.getElementById('stats');
   if(!raiz){ s.textContent='—'; return; }
   s.innerHTML =
+    `Raíz: <b style="color:var(--txt)">${raiz.dato}</b><br>`+
     `Peso (nodos): <b style="color:var(--txt)">${peso(raiz)}</b><br>`+
     `Altura: <b style="color:var(--txt)">${altura(raiz)}</b><br>`+
     `Hojas: <b style="color:var(--txt)">${hojas(raiz)}</b><br>`+
     `Mínimo: <b style="color:var(--txt)">${minimoNodo(raiz).dato}</b> · `+
     `Máximo: <b style="color:var(--txt)">${maximoNodo(raiz).dato}</b>`;
+}
+function focoNodo(h){
+  const pick = {current:null, found:null, target:null};
+  for(const id in h){ if(pick[h[id]]===null) pick[h[id]]=id; }
+  const id = pick.current || pick.found || pick.target;
+  return id ? nodoPorId(+id) : null;
+}
+function actualizarNodoInfo(h){
+  const el = document.getElementById('nodoInfo');
+  const n = focoNodo(h);
+  if(!n){ el.innerHTML = '<span class="text-muted">Sin nodo activo</span>'; return; }
+  const izq = n.izq ? n.izq.dato : 'None';
+  const der = n.der ? n.der.dato : 'None';
+  el.innerHTML =
+    `Dato: <b style="color:var(--txt)">${n.dato}</b><br>`+
+    `Izquierdo: <b style="color:var(--txt)">${izq}</b><br>`+
+    `Derecho: <b style="color:var(--txt)">${der}</b><br>`+
+    `Grado: <b style="color:var(--txt)">${grado(n)}</b>`;
 }
 
 /* ===== Motor paso a paso ===== */
@@ -263,6 +298,7 @@ function irA(i){
   salida.textContent = s.out !== undefined ? s.out : salida.textContent;
   prog.textContent = `Paso ${i+1} de ${steps.length}`;
   render();
+  actualizarNodoInfo(highlight);
   document.getElementById('btnPrev').disabled = i===0;
   document.getElementById('btnNext').disabled = i===steps.length-1;
 }
@@ -540,6 +576,27 @@ function stepsNodosNivel(nivel){
           {desc:`Hay <b>${enNivel.length}</b> nodo(s) en el nivel ${nivel} (resaltados). ✅`, highlight:h, out:`cantidadNodosNivel(${nivel}) → ${enNivel.length}`}];
 }
 
+function stepsGrado(dato){
+  if(!raiz) return [{desc:'Árbol vacío.', highlight:{}, out:`grado(${dato}) → -`}];
+  const out=[], camino=[]; let n=raiz;
+  while(n && n.dato!==dato){
+    camino.push(n.id);
+    out.push({desc:`Busco <b>${dato}</b>… comparo con <b>${n.dato}</b> → voy a la ${dato<n.dato?'<span class="badge izq">IZQUIERDA</span>':'<span class="badge der">DERECHA</span>'}`, highlight:pathHighlight(camino,n)});
+    n = dato<n.dato?n.izq:n.der;
+  }
+  if(!n){ out.push({desc:`<b>${dato}</b> no está en el árbol.`, highlight:pathHighlight(camino), out:`grado(${dato}) → -`}); return out; }
+  camino.push(n.id);
+  const g = grado(n);
+  const h = pathHighlight(camino); h[n.id]='current';
+  if(n.izq) h[n.izq.id]='found';
+  if(n.der) h[n.der.id]='found';
+  const hijosTxt = !n.izq&&!n.der ? 'no tiene hijos (es <b>hoja</b>)'
+    : (n.izq&&n.der ? 'tiene hijo <b>izquierdo</b> y <b>derecho</b>'
+    : (n.izq ? 'tiene solo hijo <b>izquierdo</b>' : 'tiene solo hijo <b>derecho</b>'));
+  out.push({desc:`<b>Grado</b> = cantidad de hijos (0, 1 o 2). <b>${dato}</b> ${hijosTxt} → grado <b>${g}</b>. ✅`, highlight:h, out:`grado(${dato}) → ${g}`});
+  return out;
+}
+
 /* ===== Conexión UI ===== */
 function leerValor(){ const v = parseInt(document.getElementById('valor').value,10); return Number.isNaN(v)?null:v; }
 function leerValor2(){ const v = parseInt(document.getElementById('valor2').value,10); return Number.isNaN(v)?null:v; }
@@ -567,8 +624,17 @@ document.querySelectorAll('[data-op]').forEach(b=>{
     else if(op==='listaDePares'){ cargarSteps(stepsListaPares()); }
     else if(op==='profundidadDato'){ const v=leerValor2(); if(v===null)return; cargarSteps(stepsProfundidadDato(v)); }
     else if(op==='cantidadNodosNivel'){ const v=leerValor2(); if(v===null)return; cargarSteps(stepsNodosNivel(v)); }
+    else if(op==='grado'){ const v=leerValor2(); if(v===null)return; cargarSteps(stepsGrado(v)); }
   });
 });
+/* ===== Toggle del menú lateral ===== */
+const sidebar = document.getElementById('sidebar');
+document.getElementById('toggleMenu').addEventListener('click', ()=>{
+  sidebar.classList.toggle('menu-closed');
+});
+// cerrado por defecto en pantallas chicas
+if(window.matchMedia('(max-width: 767px)').matches){ sidebar.classList.add('menu-closed'); }
+
 document.getElementById('btnNext').addEventListener('click', siguiente);
 document.getElementById('btnPrev').addEventListener('click', anterior);
 document.getElementById('btnPlay').addEventListener('click', play);
