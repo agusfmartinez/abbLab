@@ -41,7 +41,7 @@
   #debugger{ transition: margin-right .35s cubic-bezier(.4,0,.2,1), transform .35s cubic-bezier(.4,0,.2,1), opacity .3s ease; }
   #debugger.panel-closed{ transform: translateX(100%); opacity:0; pointer-events:none; }
   @media(min-width:768px){
-    #debugger.panel-closed{ transform:none; margin-right:-360px; opacity:0; }
+    #debugger.panel-closed{ transform:none; margin-right:calc(var(--dbg-w,440px) * -1); opacity:0; }
   }
   /* líneas de código del debugger */
   .dbg-line{ white-space:pre; padding:1px 6px; border-left:2px solid transparent; border-radius:2px; }
@@ -84,21 +84,25 @@
       <h2 class="card-title">Operaciones</h2>
       <div class="flex gap-2 flex-wrap items-center">
         <input id="valor" type="number" placeholder="nº" value="50" class="field w-24">
-        <button class="btn btn-primary" data-op="insertar">Insertar</button>
+        <button class="btn" data-op="aleatorio">Aleatorio</button>
       </div>
       <div class="flex gap-2 flex-wrap mt-2">
+        <button class="btn btn-primary" data-op="insertar">Insertar</button>
         <button class="btn" data-op="buscar">Buscar</button>
         <button class="btn" data-op="eliminar">Eliminar</button>
       </div>
-      <div class="grid grid-cols-2 gap-2 mt-2.5">
-        <button class="btn" data-op="pre">Pre-orden</button>
-        <button class="btn" data-op="in">In-orden</button>
-        <button class="btn" data-op="post">Post-orden</button>
-        <button class="btn" data-op="ejemplo">Ejemplo</button>
-      </div>
-      <div class="flex gap-2 flex-wrap mt-2">
-        <button class="btn btn-sm" data-op="aleatorio">+ Aleatorio</button>
+      <div class="flex gap-2 flex-wrap mt-3 pt-3 border-t border-line">
+        <button class="btn btn-sm" data-op="ejemplo">Ejemplo</button>
         <button class="btn btn-sm" data-op="vaciar">Vaciar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Recorrer</h2>
+      <div class="grid grid-cols-3 gap-2">
+        <button class="btn btn-sm" data-op="pre">Pre-orden</button>
+        <button class="btn btn-sm" data-op="in">In-orden</button>
+        <button class="btn btn-sm" data-op="post">Post-orden</button>
       </div>
     </div>
 
@@ -120,6 +124,7 @@
         <button class="btn btn-sm" data-op="profundidadDato">Profundidad de N</button>
         <button class="btn btn-sm" data-op="cantidadNodosNivel">Nodos en nivel N</button>
         <button class="btn btn-sm" data-op="grado">Grado del dato N</button>
+        <button class="btn btn-sm" data-op="buscarPadreHijo">Padre/hijo de N</button>
       </div>
     </div>
 
@@ -153,17 +158,6 @@
       <button id="zoomReset" class="btn btn-sm w-9 h-9 flex items-center justify-center" aria-label="Restablecer vista">⤢</button>
     </div>
 
-    <div class="absolute top-3 right-3 flex flex-col gap-3 w-[min(240px,55vw)]">
-      <div class="bg-panel/90 backdrop-blur border border-line rounded-xl p-3 shadow-2xl">
-        <h2 class="card-title">Salida</h2>
-        <div id="salida" class="font-mono text-[15px] text-ok break-words min-h-[22px]">—</div>
-      </div>
-      <div class="bg-panel/90 backdrop-blur border border-line rounded-xl p-3 shadow-2xl">
-        <h2 class="card-title">Datos del nodo</h2>
-        <div id="nodoInfo" class="text-[13px] leading-7 text-muted"><span class="text-muted">Sin nodo activo</span></div>
-      </div>
-    </div>
-
     <div class="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] md:w-auto md:max-w-2xl bg-panel/90 backdrop-blur border border-line rounded-xl p-3 md:px-4 flex flex-col gap-3 items-stretch md:items-center shadow-2xl">
       <div id="stepDesc" class="step-desc text-sm leading-relaxed text-center">Insertá números o cargá el ejemplo para empezar.</div>
       <div class="flex flex-col gap-1.5 items-center">
@@ -180,7 +174,9 @@
     </div>
   </section>
 
-  <aside id="debugger" class="panel-closed absolute md:relative z-30 inset-y-0 right-0 w-[300px] md:w-[360px] md:shrink-0 h-full bg-panel border-l border-line p-3.5 flex flex-col gap-3 overflow-y-auto no-scrollbar shadow-2xl md:shadow-none">
+  <aside id="debugger" class="panel-closed absolute md:relative z-30 inset-y-0 right-0 w-[85vw] max-w-[340px] md:max-w-none md:w-[var(--dbg-w)] md:shrink-0 h-full bg-panel border-l border-line flex overflow-hidden shadow-2xl md:shadow-none" style="--dbg-w:440px">
+    <div id="dbgResizer" class="hidden md:block shrink-0 w-1.5 cursor-ew-resize hover:bg-accent/40 transition-colors" title="Arrastrá para ensanchar el panel"></div>
+    <div class="flex-1 min-w-0 h-full overflow-y-auto no-scrollbar p-3.5 flex flex-col gap-3">
     <div class="card">
       <h2 class="card-title">Debugger — código</h2>
       <div id="dbgCode" class="font-mono text-[12px] leading-5 overflow-x-auto no-scrollbar">
@@ -193,6 +189,15 @@
     </div>
     <div class="text-[11px] text-muted px-1">
       La <b>pila</b> crece con cada llamada recursiva (arriba = ejecución actual) y se achica al retornar.
+    </div>
+    <div class="card">
+      <h2 class="card-title">Salida</h2>
+      <div id="salida" class="font-mono text-[15px] text-ok break-words min-h-[22px]">—</div>
+    </div>
+    <div class="card">
+      <h2 class="card-title">Datos del nodo</h2>
+      <div id="nodoInfo" class="text-[13px] leading-7 text-muted"><span class="text-muted">Sin nodo activo</span></div>
+    </div>
     </div>
   </aside>
 </div>
@@ -228,7 +233,12 @@ function hojas(n){ if(!n) return 0; if(!n.izq&&!n.der) return 1; return hojas(n.
 function maximoNodo(n){ while(n.der) n=n.der; return n; }
 function minimoNodo(n){ while(n.izq) n=n.izq; return n; }
 function grado(n){ return (n.izq?1:0)+(n.der?1:0); }
-function nodoPorId(id){ let r=null; (function w(n){ if(!n||r)return; if(n.id===id){r=n;return;} w(n.izq); w(n.der); })(raiz); return r; }
+function clonar(n){ return n ? {id:n.id, dato:n.dato, izq:clonar(n.izq), der:clonar(n.der)} : null; }
+
+// árbol que se muestra: normalmente la raíz real; en eliminar, un snapshot del paso
+let arbolVista = null;
+function raizVista(){ return arbolVista || raiz; }
+function nodoPorId(id){ let r=null; (function w(n){ if(!n||r)return; if(n.id===id){r=n;return;} w(n.izq); w(n.der); })(raizVista()); return r; }
 
 /* ===== Layout (x por in-orden, y por profundidad) ===== */
 const NX = 60, NY = 78, MARGIN = 40;
@@ -241,7 +251,7 @@ function calcularLayout(){
     pos.set(n.id, {col:i++, depth});
     maxDepth = Math.max(maxDepth, depth);
     walk(n.der, depth+1);
-  })(raiz, 0);
+  })(raizVista(), 0);
   return {pos, cols:i, maxDepth};
 }
 
@@ -251,7 +261,7 @@ const emptyMsg = document.getElementById('emptyMsg');
 let highlight = {}; // id -> clase
 
 function render(){
-  emptyMsg.style.display = raiz ? 'none':'block';
+  emptyMsg.style.display = raizVista() ? 'none':'block';
   const {pos, cols, maxDepth} = calcularLayout();
   const w = Math.max(cols*NX + MARGIN*2, 400);
   const h = (maxDepth+1)*NY + MARGIN*2;
@@ -273,7 +283,7 @@ function render(){
     const cls = highlight[n.id] || '';
     nodes += `<g class="n ${cls}"><circle cx="${x}" cy="${y}" r="20"/><text x="${x}" y="${y}">${n.dato}</text></g>`;
     walk(n.izq); walk(n.der);
-  })(raiz);
+  })(raizVista());
   svg.innerHTML = `<g id="vp" transform="translate(${view.x},${view.y}) scale(${view.k})">${edges}${nodes}</g>`;
   actualizarStats();
 }
@@ -320,14 +330,15 @@ svg.addEventListener('pointerup', finArrastre);
 svg.addEventListener('pointerleave', finArrastre);
 function actualizarStats(){
   const s = document.getElementById('stats');
-  if(!raiz){ s.textContent='—'; return; }
+  const R = raizVista();
+  if(!R){ s.textContent='—'; return; }
   s.innerHTML =
-    `Raíz: <b style="color:var(--txt)">${raiz.dato}</b><br>`+
-    `Peso (nodos): <b style="color:var(--txt)">${peso(raiz)}</b><br>`+
-    `Altura: <b style="color:var(--txt)">${altura(raiz)}</b><br>`+
-    `Hojas: <b style="color:var(--txt)">${hojas(raiz)}</b><br>`+
-    `Mínimo: <b style="color:var(--txt)">${minimoNodo(raiz).dato}</b> · `+
-    `Máximo: <b style="color:var(--txt)">${maximoNodo(raiz).dato}</b>`;
+    `Raíz: <b style="color:var(--txt)">${R.dato}</b><br>`+
+    `Peso (nodos): <b style="color:var(--txt)">${peso(R)}</b><br>`+
+    `Altura: <b style="color:var(--txt)">${altura(R)}</b><br>`+
+    `Hojas: <b style="color:var(--txt)">${hojas(R)}</b><br>`+
+    `Mínimo: <b style="color:var(--txt)">${minimoNodo(R).dato}</b> · `+
+    `Máximo: <b style="color:var(--txt)">${maximoNodo(R).dato}</b>`;
 }
 function focoNodo(h){
   const pick = {current:null, found:null, target:null};
@@ -425,6 +436,147 @@ const CODE = {
     '        cantNodos += self.derecho.pesoNodo()',
     '    return cantNodos',
   ],
+  maximoNodo:[
+    'def maximoNodo(self):',
+    '    nodoMaximo = None',
+    '    if self.tieneDerecho():',
+    '        nodoMaximo = self.derecho.maximoNodo()',
+    '    else:',
+    '        nodoMaximo = self',
+    '    return nodoMaximo',
+  ],
+  minimoNodo:[
+    'def minimoNodo(self):',
+    '    nodoMinimo = None',
+    '    if self.tieneIzquierdo():',
+    '        nodoMinimo = self.izquierdo.minimoNodo()',
+    '    else:',
+    '        nodoMinimo = self',
+    '    return nodoMinimo',
+  ],
+  cantidadHojasNodo:[
+    'def cantidadHojasNodo(self):',
+    '    cantHojas = 0',
+    '    if self.esHoja():',
+    '        cantHojas = 1',
+    '    else:',
+    '        if self.tieneIzquierdo():',
+    '            cantHojas = self.izquierdo.cantidadHojasNodo()',
+    '        if self.tieneDerecho():',
+    '            cantHojas += self.derecho.cantidadHojasNodo()',
+    '    return cantHojas',
+  ],
+  profundidadDatoNodo:[
+    'def profundidadDatoNodo(self, datoBusc, nivelActual=0):',
+    '    nivelNodoBuscado = None',
+    '    if datoBusc == self.dato:',
+    '        nivelNodoBuscado = nivelActual',
+    '    elif datoBusc < self.dato:',
+    '        if self.tieneIzquierdo():',
+    '            nivelNodoBuscado = self.izquierdo.profundidadDatoNodo(datoBusc, nivelActual+1)',
+    '    else:',
+    '        if self.tieneDerecho():',
+    '            nivelNodoBuscado = self.derecho.profundidadDatoNodo(datoBusc, nivelActual+1)',
+    '    return nivelNodoBuscado',
+  ],
+  cantidadNodosNivelNodo:[
+    'def cantidadNodosNivelNodo(self, nivelBusc, nivelActual=0):',
+    '    cantNodos = 0',
+    '    if nivelActual == nivelBusc:',
+    '        cantNodos = 1',
+    '    elif nivelActual < nivelBusc:',
+    '        if self.tieneIzquierdo():',
+    '            cantNodos += self.izquierdo.cantidadNodosNivelNodo(nivelBusc, nivelActual+1)',
+    '        if self.tieneDerecho():',
+    '            cantNodos += self.derecho.cantidadNodosNivelNodo(nivelBusc, nivelActual+1)',
+    '    return cantNodos',
+  ],
+  grado:[
+    'def grado(self):',
+    '    cantHijos = 0',
+    '    if self.tieneIzquierdo():',
+    '        cantHijos += 1',
+    '    if self.tieneDerecho():',
+    '        cantHijos += 1',
+    '    return cantHijos',
+  ],
+  predecesorNodo:[
+    'def predecesorNodo(self):',
+    '    nodoPred = None',
+    '    if self.tieneIzquierdo():',
+    '        nodoPred = self.izquierdo.maximoNodo()',
+    '    return nodoPred',
+  ],
+  sucesorNodo:[
+    'def sucesorNodo(self):',
+    '    nodoSuc = None',
+    '    if self.tieneDerecho():',
+    '        nodoSuc = self.derecho.minimoNodo()',
+    '    return nodoSuc',
+  ],
+  listaDeParesNodo:[
+    'def listaDeParesNodo(self, listaPares):',
+    '    if self.tieneIzquierdo():',
+    '        self.izquierdo.listaDeParesNodo(listaPares)',
+    '    if esPar(self.dato):',
+    '        listaPares.append(self.dato)',
+    '    if self.tieneDerecho():',
+    '        self.derecho.listaDeParesNodo(listaPares)',
+  ],
+  eliminar:[
+    'def eliminar(self, datoDel):',
+    '    if not self.estaVacio():',
+    '        if datoDel == self.__raiz.dato:',
+    '            nodoReemplazo = self.__raiz.predecesorNodo()',
+    '            if nodoReemplazo == None:',
+    '                nodoReemplazo = self.__raiz.sucesorNodo()',
+    '            if nodoReemplazo != None:',
+    '                self.__raiz.eliminarNodo(nodoReemplazo.dato)',
+    '                nodoReemplazo.izquierdo = self.__raiz.izquierdo',
+    '                nodoReemplazo.derecho = self.__raiz.derecho',
+    '            self.__raiz = nodoReemplazo',
+    '        else:',
+    '            self.__raiz.eliminarNodo(datoDel)',
+  ],
+  eliminarNodo:[
+    'def eliminarNodo(self, datoDel):',
+    '    nodoPadre, nodoAEliminar, lado = self.buscarPadreHijo(datoDel)',
+    '    if nodoPadre != None:',
+    '        nodoReemplazo = nodoAEliminar.predecesorNodo()',
+    '        if nodoReemplazo == None:',
+    '            nodoReemplazo = nodoAEliminar.sucesorNodo()',
+    '        if nodoReemplazo != None:',
+    '            self.eliminarNodo(nodoReemplazo.dato)',
+    '            nodoReemplazo.izquierdo = nodoAEliminar.izquierdo',
+    '            nodoReemplazo.derecho = nodoAEliminar.derecho',
+    '        if lado == "izquierdo":',
+    '            nodoPadre.izquierdo = nodoReemplazo',
+    '        else:',
+    '            nodoPadre.derecho = nodoReemplazo',
+  ],
+  buscarPadreHijo:[
+    'def buscarPadreHijo(self, datoBusc):',
+    '    nodoPadreBuscado = None',
+    '    nodoHijoBuscado = None',
+    '    ladoHijo = None',
+    '    if datoBusc < self.dato:',
+    '        if self.tieneIzquierdo():',
+    '            if self.izquierdo.dato == datoBusc:',
+    '                nodoPadreBuscado = self',
+    '                nodoHijoBuscado = self.izquierdo',
+    '                ladoHijo = "izquierdo"',
+    '            else:',
+    '                nodoPadreBuscado, nodoHijoBuscado, ladoHijo = self.izquierdo.buscarPadreHijo(datoBusc)',
+    '    if datoBusc > self.dato:',
+    '        if self.tieneDerecho():',
+    '            if self.derecho.dato == datoBusc:',
+    '                nodoPadreBuscado = self',
+    '                nodoHijoBuscado = self.derecho',
+    '                ladoHijo = "derecho"',
+    '            else:',
+    '                nodoPadreBuscado, nodoHijoBuscado, ladoHijo = self.derecho.buscarPadreHijo(datoBusc)',
+    '    return nodoPadreBuscado, nodoHijoBuscado, ladoHijo',
+  ],
 };
 function actualizarDebugger(step){
   const codeEl = document.getElementById('dbgCode');
@@ -467,6 +619,7 @@ function irA(i){
   }
   stepIdx = i;
   const s = steps[i];
+  arbolVista = s.treeSnap || null;
   highlight = s.highlight || {};
   stepDesc.innerHTML = s.desc;
   salida.textContent = s.out !== undefined ? s.out : salida.textContent;
@@ -976,6 +1129,7 @@ function traceAltura(){
     stack.pop(); visit[n.id]='visited';
     return altura;
   }
+  steps.push({desc:`<b>Altura</b> = el camino más largo desde la raíz hasta una hoja. Una <b>hoja mide 0</b>; un nodo interno mide <b>1 + la mayor altura entre sus hijos</b>. Se calcula de abajo hacia arriba con recursión.`, highlight:{}, code:'alturaNodo', line:1, stack:[]});
   const total=rec(raiz);
   steps.push({desc:`Altura del árbol = <b>${total}</b>. ✅`, highlight:{...visit}, code:'alturaNodo', line:12, stack:[], out:`profundidad() → ${total}`});
   return steps;
@@ -1011,34 +1165,450 @@ function tracePeso(){
   return steps;
 }
 
+function traceMaximo(){
+  if(!raiz) return [{desc:'Árbol vacío → máximo = None.', highlight:{}, code:'maximoNodo', line:1, stack:[], out:'maximo() → None'}];
+  const steps=[], camino=[], stack=[];
+  const snap=()=>stack.map(f=>({label:f.label, vars:{...f.vars}}));
+  steps.push({desc:`<b>Máximo</b>: el mayor está siempre <b>todo a la derecha</b>. El método baja por la derecha hasta un nodo <b>sin hijo derecho</b>.`, highlight:{[raiz.id]:'current'}, code:'maximoNodo', line:1, stack:[]});
+  (function rec(n){
+    stack.push({label:'maximoNodo', vars:{'self.dato':n.dato}});
+    camino.push(n.id);
+    steps.push({desc:`Entro a <b>maximoNodo</b> sobre <b>${n.dato}</b>. ¿Tiene hijo derecho?`, highlight:pathHighlight(camino,n), code:'maximoNodo', line:3, stack:snap()});
+    let res;
+    if(n.der){
+      steps.push({desc:`Sí → <b>recursión</b> a la derecha (<b>${n.der.dato}</b>).`, highlight:pathHighlight(camino,n), code:'maximoNodo', line:4, stack:snap()});
+      res=rec(n.der);
+    } else {
+      res=n;
+      steps.push({desc:`No → <b>nodoMaximo = self</b>. Es el máximo (<b>${n.dato}</b>). ✅`, highlight:(()=>{const h=pathHighlight(camino);h[n.id]='found';return h;})(), code:'maximoNodo', line:6, stack:snap()});
+    }
+    stack[stack.length-1].vars['return']=res.dato;
+    steps.push({desc:`<b>return</b> nodo <b>${res.dato}</b> desde maximoNodo(${n.dato}).`, highlight:(()=>{const h=pathHighlight(camino);h[res.id]='found';return h;})(), code:'maximoNodo', line:7, stack:snap()});
+    stack.pop(); camino.pop();
+    return res;
+  })(raiz);
+  const m=maximoNodo(raiz);
+  steps.push({desc:`Máximo del árbol = <b>${m.dato}</b>. ✅`, highlight:{[m.id]:'found'}, code:'maximoNodo', line:7, stack:[], out:`maximo() → ${m.dato}`});
+  return steps;
+}
+
+function traceMinimo(){
+  if(!raiz) return [{desc:'Árbol vacío → mínimo = None.', highlight:{}, code:'minimoNodo', line:1, stack:[], out:'minimo() → None'}];
+  const steps=[], camino=[], stack=[];
+  const snap=()=>stack.map(f=>({label:f.label, vars:{...f.vars}}));
+  steps.push({desc:`<b>Mínimo</b>: el menor está siempre <b>todo a la izquierda</b>. El método baja por la izquierda hasta un nodo <b>sin hijo izquierdo</b>.`, highlight:{[raiz.id]:'current'}, code:'minimoNodo', line:1, stack:[]});
+  (function rec(n){
+    stack.push({label:'minimoNodo', vars:{'self.dato':n.dato}});
+    camino.push(n.id);
+    steps.push({desc:`Entro a <b>minimoNodo</b> sobre <b>${n.dato}</b>. ¿Tiene hijo izquierdo?`, highlight:pathHighlight(camino,n), code:'minimoNodo', line:3, stack:snap()});
+    let res;
+    if(n.izq){
+      steps.push({desc:`Sí → <b>recursión</b> a la izquierda (<b>${n.izq.dato}</b>).`, highlight:pathHighlight(camino,n), code:'minimoNodo', line:4, stack:snap()});
+      res=rec(n.izq);
+    } else {
+      res=n;
+      steps.push({desc:`No → <b>nodoMinimo = self</b>. Es el mínimo (<b>${n.dato}</b>). ✅`, highlight:(()=>{const h=pathHighlight(camino);h[n.id]='found';return h;})(), code:'minimoNodo', line:6, stack:snap()});
+    }
+    stack[stack.length-1].vars['return']=res.dato;
+    steps.push({desc:`<b>return</b> nodo <b>${res.dato}</b> desde minimoNodo(${n.dato}).`, highlight:(()=>{const h=pathHighlight(camino);h[res.id]='found';return h;})(), code:'minimoNodo', line:7, stack:snap()});
+    stack.pop(); camino.pop();
+    return res;
+  })(raiz);
+  const m=minimoNodo(raiz);
+  steps.push({desc:`Mínimo del árbol = <b>${m.dato}</b>. ✅`, highlight:{[m.id]:'found'}, code:'minimoNodo', line:7, stack:[], out:`minimo() → ${m.dato}`});
+  return steps;
+}
+
+function traceCantHojas(){
+  if(!raiz) return [{desc:'Árbol vacío → 0 hojas.', highlight:{}, code:'cantidadHojasNodo', line:1, stack:[], out:'cantidadHojas() → 0'}];
+  const steps=[], stack=[], visit={};
+  const snap=()=>stack.map(f=>({label:f.label, vars:{...f.vars}}));
+  steps.push({desc:`<b>Cantidad de hojas</b>: una hoja aporta <b>1</b>; un nodo interno <b>suma</b> las hojas de sus hijos (recursivo).`, highlight:{}, code:'cantidadHojasNodo', line:1, stack:[]});
+  function rec(n){
+    const frame={label:'cantidadHojasNodo', vars:{'self.dato':n.dato, 'cantHojas':0}};
+    stack.push(frame);
+    const cur=()=>conActual(visit,n.id);
+    steps.push({desc:`Entro a <b>cantidadHojasNodo</b> sobre <b>${n.dato}</b>. ¿Es hoja?`, highlight:cur(), code:'cantidadHojasNodo', line:3, stack:snap()});
+    let c;
+    if(grado(n)===0){
+      c=1; frame.vars['cantHojas']=1;
+      steps.push({desc:`Sí, es hoja → <b>cantHojas = 1</b>.`, highlight:(()=>{const h=conActual(visit,n.id);h[n.id]='found';return h;})(), code:'cantidadHojasNodo', line:4, stack:snap()});
+    } else {
+      c=0;
+      steps.push({desc:`No es hoja → sumo las hojas de los hijos.`, highlight:cur(), code:'cantidadHojasNodo', line:5, stack:snap()});
+      if(n.izq){
+        steps.push({desc:`Recursión izquierda (<b>${n.izq.dato}</b>).`, highlight:cur(), code:'cantidadHojasNodo', line:7, stack:snap()});
+        const ci=rec(n.izq); c=ci; frame.vars['cantHojas']=c;
+        steps.push({desc:`Vuelve → hojas izq = ${ci}. <b>cantHojas = ${c}</b>.`, highlight:cur(), code:'cantidadHojasNodo', line:7, stack:snap()});
+      }
+      if(n.der){
+        steps.push({desc:`Recursión derecha (<b>${n.der.dato}</b>).`, highlight:cur(), code:'cantidadHojasNodo', line:9, stack:snap()});
+        const cd=rec(n.der); c+=cd; frame.vars['cantHojas']=c;
+        steps.push({desc:`Vuelve → hojas der = ${cd}. <b>cantHojas = ${c}</b>.`, highlight:cur(), code:'cantidadHojasNodo', line:9, stack:snap()});
+      }
+    }
+    frame.vars['return']=c;
+    steps.push({desc:`<b>return ${c}</b> desde cantidadHojasNodo(${n.dato}). Se desapila.`, highlight:cur(), code:'cantidadHojasNodo', line:10, stack:snap()});
+    stack.pop(); visit[n.id]='visited';
+    return c;
+  }
+  const total=rec(raiz);
+  steps.push({desc:`Total de hojas = <b>${total}</b>. ✅`, highlight:{...visit}, code:'cantidadHojasNodo', line:10, stack:[], out:`cantidadHojas() → ${total}`});
+  return steps;
+}
+
+function traceProfundidadDato(dato){
+  if(!raiz) return [{desc:'Árbol vacío.', highlight:{}, code:'profundidadDatoNodo', line:1, stack:[], out:`profundidadDato(${dato}) → None`}];
+  const steps=[], camino=[], stack=[];
+  const snap=()=>stack.map(f=>({label:f.label, vars:{...f.vars}}));
+  (function rec(n, nivel){
+    stack.push({label:'profundidadDatoNodo', vars:{'self.dato':n.dato, 'nivelActual':nivel}});
+    camino.push(n.id);
+    steps.push({desc:`Entro sobre <b>${n.dato}</b>, nivelActual = <b>${nivel}</b>. ¿<b>${dato} == ${n.dato}</b>?`, highlight:pathHighlight(camino,n), code:'profundidadDatoNodo', line:3, stack:snap()});
+    if(dato===n.dato){
+      stack[stack.length-1].vars['return']=nivel;
+      steps.push({desc:`Sí → <b>nivelNodoBuscado = ${nivel}</b>. Encontrado. <span class="badge ok">OK</span>`, highlight:(()=>{const h=pathHighlight(camino);h[n.id]='found';return h;})(), code:'profundidadDatoNodo', line:4, stack:snap(), out:`profundidadDato(${dato}) → ${nivel}`});
+    } else if(dato<n.dato){
+      steps.push({desc:`No. ¿<b>${dato} &lt; ${n.dato}</b>? Sí → izquierda, nivel ${nivel+1}.`, highlight:pathHighlight(camino,n), code:'profundidadDatoNodo', line:5, stack:snap()});
+      if(n.izq){ steps.push({desc:`Recursión izquierda (<b>${n.izq.dato}</b>).`, highlight:pathHighlight(camino,n), code:'profundidadDatoNodo', line:7, stack:snap()}); rec(n.izq, nivel+1); }
+      else { steps.push({desc:`No hay hijo izquierdo → queda <b>None</b>. No está. <span class="badge bad">NO ESTÁ</span>`, highlight:pathHighlight(camino,n), code:'profundidadDatoNodo', line:6, stack:snap(), out:`profundidadDato(${dato}) → None`}); }
+    } else {
+      steps.push({desc:`No, es mayor → rama <b>else</b> (derecha), nivel ${nivel+1}.`, highlight:pathHighlight(camino,n), code:'profundidadDatoNodo', line:8, stack:snap()});
+      if(n.der){ steps.push({desc:`Recursión derecha (<b>${n.der.dato}</b>).`, highlight:pathHighlight(camino,n), code:'profundidadDatoNodo', line:10, stack:snap()}); rec(n.der, nivel+1); }
+      else { steps.push({desc:`No hay hijo derecho → queda <b>None</b>. No está. <span class="badge bad">NO ESTÁ</span>`, highlight:pathHighlight(camino,n), code:'profundidadDatoNodo', line:9, stack:snap(), out:`profundidadDato(${dato}) → None`}); }
+    }
+    steps.push({desc:`<b>return nivelNodoBuscado</b> desde el nodo ${n.dato}. Se desapila.`, highlight:pathHighlight(camino,n), code:'profundidadDatoNodo', line:11, stack:snap()});
+    stack.pop(); camino.pop();
+  })(raiz, 0);
+  return steps;
+}
+
+function traceNodosNivel(nivelBusc){
+  if(!raiz) return [{desc:'Árbol vacío → 0.', highlight:{}, code:'cantidadNodosNivelNodo', line:1, stack:[], out:`cantidadNodosNivel(${nivelBusc}) → 0`}];
+  const steps=[], stack=[], visit={};
+  const snap=()=>stack.map(f=>({label:f.label, vars:{...f.vars}}));
+  steps.push({desc:`<b>Nodos en nivel ${nivelBusc}</b>: bajo contando el nivel; cuando <b>nivelActual == ${nivelBusc}</b>, ese nodo cuenta 1 y no sigo más abajo.`, highlight:{}, code:'cantidadNodosNivelNodo', line:1, stack:[]});
+  function rec(n, nivel){
+    const frame={label:'cantidadNodosNivelNodo', vars:{'self.dato':n.dato, 'nivelActual':nivel, 'cantNodos':0}};
+    stack.push(frame);
+    const cur=()=>conActual(visit,n.id);
+    steps.push({desc:`Entro sobre <b>${n.dato}</b>, nivelActual = <b>${nivel}</b>. ¿<b>${nivel} == ${nivelBusc}</b>?`, highlight:cur(), code:'cantidadNodosNivelNodo', line:3, stack:snap()});
+    let c=0;
+    if(nivel===nivelBusc){
+      c=1; frame.vars['cantNodos']=1;
+      steps.push({desc:`Sí → <b>cantNodos = 1</b> (el nodo ${n.dato} está en el nivel ${nivelBusc}). No bajo más.`, highlight:(()=>{const h=conActual(visit,n.id);h[n.id]='found';return h;})(), code:'cantidadNodosNivelNodo', line:4, stack:snap()});
+    } else if(nivel<nivelBusc){
+      steps.push({desc:`No, pero <b>${nivel} &lt; ${nivelBusc}</b> → bajo a los hijos (nivel ${nivel+1}).`, highlight:cur(), code:'cantidadNodosNivelNodo', line:5, stack:snap()});
+      if(n.izq){ steps.push({desc:`Recursión izquierda (<b>${n.izq.dato}</b>).`, highlight:cur(), code:'cantidadNodosNivelNodo', line:7, stack:snap()}); const ci=rec(n.izq,nivel+1); c+=ci; frame.vars['cantNodos']=c; steps.push({desc:`Vuelve izq = ${ci} → <b>cantNodos = ${c}</b>.`, highlight:cur(), code:'cantidadNodosNivelNodo', line:7, stack:snap()}); }
+      if(n.der){ steps.push({desc:`Recursión derecha (<b>${n.der.dato}</b>).`, highlight:cur(), code:'cantidadNodosNivelNodo', line:9, stack:snap()}); const cd=rec(n.der,nivel+1); c+=cd; frame.vars['cantNodos']=c; steps.push({desc:`Vuelve der = ${cd} → <b>cantNodos = ${c}</b>.`, highlight:cur(), code:'cantidadNodosNivelNodo', line:9, stack:snap()}); }
+    } else {
+      steps.push({desc:`Pasé el nivel buscado → <b>cantNodos = 0</b>.`, highlight:cur(), code:'cantidadNodosNivelNodo', line:2, stack:snap()});
+    }
+    frame.vars['return']=c;
+    steps.push({desc:`<b>return ${c}</b> desde el nodo ${n.dato}. Se desapila.`, highlight:cur(), code:'cantidadNodosNivelNodo', line:10, stack:snap()});
+    stack.pop(); visit[n.id]='visited';
+    return c;
+  }
+  const total=rec(raiz,0);
+  steps.push({desc:`Total en nivel ${nivelBusc} = <b>${total}</b>. ✅`, highlight:{...visit}, code:'cantidadNodosNivelNodo', line:10, stack:[], out:`cantidadNodosNivel(${nivelBusc}) → ${total}`});
+  return steps;
+}
+
+function traceGrado(dato){
+  if(!raiz) return [{desc:'Árbol vacío.', highlight:{}, code:'grado', line:1, stack:[], out:`grado(${dato}) → -`}];
+  const steps=[], camino=[];
+  let n=raiz;
+  while(n && n.dato!==dato){
+    camino.push(n.id);
+    steps.push({desc:`Primero <b>ubico</b> el nodo ${dato}: comparo con <b>${n.dato}</b> → ${dato<n.dato?'<span class="badge izq">IZQUIERDA</span>':'<span class="badge der">DERECHA</span>'}`, highlight:pathHighlight(camino,n), code:'grado', stack:[]});
+    n = dato<n.dato?n.izq:n.der;
+  }
+  if(!n){ steps.push({desc:`<b>${dato}</b> no está en el árbol.`, highlight:pathHighlight(camino), code:'grado', stack:[], out:`grado(${dato}) → -`}); return steps; }
+  camino.push(n.id);
+  const vars={'self.dato':n.dato, 'cantHijos':0};
+  const cur=()=>{const h=pathHighlight(camino);h[n.id]='current';return h;};
+  steps.push({desc:`Nodo <b>${dato}</b> encontrado. Ejecuto <b>grado()</b>. <b>cantHijos = 0</b>.`, highlight:cur(), code:'grado', line:2, stack:[{label:'grado', vars:{...vars}}]});
+  let g=0;
+  steps.push({desc:`¿Tiene hijo izquierdo? ${n.izq?'<b>Sí</b> → cantHijos += 1':'No'}`, highlight:cur(), code:'grado', line:3, stack:[{label:'grado', vars:{...vars}}]});
+  if(n.izq){ g++; vars['cantHijos']=g; steps.push({desc:`<b>cantHijos = ${g}</b>.`, highlight:(()=>{const h=cur();h[n.izq.id]='found';return h;})(), code:'grado', line:4, stack:[{label:'grado', vars:{...vars}}]}); }
+  steps.push({desc:`¿Tiene hijo derecho? ${n.der?'<b>Sí</b> → cantHijos += 1':'No'}`, highlight:cur(), code:'grado', line:5, stack:[{label:'grado', vars:{...vars}}]});
+  if(n.der){ g++; vars['cantHijos']=g; steps.push({desc:`<b>cantHijos = ${g}</b>.`, highlight:(()=>{const h=cur();h[n.der.id]='found';return h;})(), code:'grado', line:6, stack:[{label:'grado', vars:{...vars}}]}); }
+  vars['return']=g;
+  steps.push({desc:`<b>return ${g}</b>. El grado de <b>${dato}</b> es <b>${g}</b>. ✅`, highlight:(()=>{const h=cur();if(n.izq)h[n.izq.id]='found';if(n.der)h[n.der.id]='found';return h;})(), code:'grado', line:7, stack:[{label:'grado', vars:{...vars}}], out:`grado(${dato}) → ${g}`});
+  return steps;
+}
+
+function tracePredecesor(){
+  if(!raiz) return [{desc:'Árbol vacío.', highlight:{}, code:'predecesorNodo', line:1, stack:[], out:'predecesor() → None'}];
+  const steps=[], stack=[], camino=[];
+  const snap=()=>stack.map(f=>({label:f.label, vars:{...f.vars}}));
+  stack.push({label:'predecesorNodo', vars:{'self.dato':raiz.dato}});
+  camino.push(raiz.id);
+  steps.push({desc:`<b>Predecesor</b> del nodo raíz (<b>${raiz.dato}</b>) = <b>máximo del subárbol izquierdo</b> (el valor anterior en orden).`, highlight:{[raiz.id]:'target'}, code:'predecesorNodo', line:1, stack:snap()});
+  steps.push({desc:`¿Tiene hijo izquierdo?`, highlight:{[raiz.id]:'target'}, code:'predecesorNodo', line:3, stack:snap()});
+  if(!raiz.izq){
+    stack[0].vars['return']='None';
+    steps.push({desc:`No → <b>nodoPred = None</b>. La raíz no tiene predecesor.`, highlight:{[raiz.id]:'target'}, code:'predecesorNodo', line:5, stack:snap(), out:'predecesor(raíz) → None'});
+    return steps;
+  }
+  steps.push({desc:`Sí → llamo <b>maximoNodo()</b> sobre el subárbol izquierdo (<b>${raiz.izq.dato}</b>). Se apila otro método.`, highlight:{[raiz.id]:'target',[raiz.izq.id]:'path'}, code:'predecesorNodo', line:4, stack:snap()});
+  const res=(function recMax(n){
+    stack.push({label:'maximoNodo', vars:{'self.dato':n.dato}});
+    camino.push(n.id);
+    steps.push({desc:`Entro a <b>maximoNodo</b> sobre <b>${n.dato}</b>. ¿Tiene hijo derecho?`, highlight:pathHighlight(camino,n), code:'maximoNodo', line:3, stack:snap()});
+    let r;
+    if(n.der){
+      steps.push({desc:`Sí → recursión a la derecha (<b>${n.der.dato}</b>).`, highlight:pathHighlight(camino,n), code:'maximoNodo', line:4, stack:snap()});
+      r=recMax(n.der);
+    } else {
+      r=n;
+      steps.push({desc:`No → <b>nodoMaximo = self</b> (<b>${n.dato}</b>).`, highlight:(()=>{const h=pathHighlight(camino);h[n.id]='found';return h;})(), code:'maximoNodo', line:6, stack:snap()});
+    }
+    stack[stack.length-1].vars['return']=r.dato;
+    steps.push({desc:`<b>return ${r.dato}</b> desde maximoNodo(${n.dato}).`, highlight:(()=>{const h=pathHighlight(camino);h[r.id]='found';return h;})(), code:'maximoNodo', line:7, stack:snap()});
+    stack.pop(); camino.pop();
+    return r;
+  })(raiz.izq);
+  stack[0].vars['return']=res.dato;
+  steps.push({desc:`<b>nodoPred = ${res.dato}</b>. <b>return</b> desde predecesorNodo. ✅`, highlight:{[raiz.id]:'target',[res.id]:'found'}, code:'predecesorNodo', line:5, stack:snap(), out:`predecesor(${raiz.dato}) → ${res.dato}`});
+  return steps;
+}
+
+function traceSucesor(){
+  if(!raiz) return [{desc:'Árbol vacío.', highlight:{}, code:'sucesorNodo', line:1, stack:[], out:'sucesor() → None'}];
+  const steps=[], stack=[], camino=[];
+  const snap=()=>stack.map(f=>({label:f.label, vars:{...f.vars}}));
+  stack.push({label:'sucesorNodo', vars:{'self.dato':raiz.dato}});
+  camino.push(raiz.id);
+  steps.push({desc:`<b>Sucesor</b> del nodo raíz (<b>${raiz.dato}</b>) = <b>mínimo del subárbol derecho</b> (el valor siguiente en orden).`, highlight:{[raiz.id]:'target'}, code:'sucesorNodo', line:1, stack:snap()});
+  steps.push({desc:`¿Tiene hijo derecho?`, highlight:{[raiz.id]:'target'}, code:'sucesorNodo', line:3, stack:snap()});
+  if(!raiz.der){
+    stack[0].vars['return']='None';
+    steps.push({desc:`No → <b>nodoSuc = None</b>. La raíz no tiene sucesor.`, highlight:{[raiz.id]:'target'}, code:'sucesorNodo', line:5, stack:snap(), out:'sucesor(raíz) → None'});
+    return steps;
+  }
+  steps.push({desc:`Sí → llamo <b>minimoNodo()</b> sobre el subárbol derecho (<b>${raiz.der.dato}</b>). Se apila otro método.`, highlight:{[raiz.id]:'target',[raiz.der.id]:'path'}, code:'sucesorNodo', line:4, stack:snap()});
+  const res=(function recMin(n){
+    stack.push({label:'minimoNodo', vars:{'self.dato':n.dato}});
+    camino.push(n.id);
+    steps.push({desc:`Entro a <b>minimoNodo</b> sobre <b>${n.dato}</b>. ¿Tiene hijo izquierdo?`, highlight:pathHighlight(camino,n), code:'minimoNodo', line:3, stack:snap()});
+    let r;
+    if(n.izq){
+      steps.push({desc:`Sí → recursión a la izquierda (<b>${n.izq.dato}</b>).`, highlight:pathHighlight(camino,n), code:'minimoNodo', line:4, stack:snap()});
+      r=recMin(n.izq);
+    } else {
+      r=n;
+      steps.push({desc:`No → <b>nodoMinimo = self</b> (<b>${n.dato}</b>).`, highlight:(()=>{const h=pathHighlight(camino);h[n.id]='found';return h;})(), code:'minimoNodo', line:6, stack:snap()});
+    }
+    stack[stack.length-1].vars['return']=r.dato;
+    steps.push({desc:`<b>return ${r.dato}</b> desde minimoNodo(${n.dato}).`, highlight:(()=>{const h=pathHighlight(camino);h[r.id]='found';return h;})(), code:'minimoNodo', line:7, stack:snap()});
+    stack.pop(); camino.pop();
+    return r;
+  })(raiz.der);
+  stack[0].vars['return']=res.dato;
+  steps.push({desc:`<b>nodoSuc = ${res.dato}</b>. <b>return</b> desde sucesorNodo. ✅`, highlight:{[raiz.id]:'target',[res.id]:'found'}, code:'sucesorNodo', line:5, stack:snap(), out:`sucesor(${raiz.dato}) → ${res.dato}`});
+  return steps;
+}
+
+function traceListaPares(){
+  if(!raiz) return [{desc:'Árbol vacío → [].', highlight:{}, code:'listaDeParesNodo', line:1, stack:[], out:'[]'}];
+  const steps=[], stack=[], visit={}, lista=[];
+  const snap=()=>stack.map(f=>({label:f.label, vars:{...f.vars}}));
+  steps.push({desc:`<b>Lista de pares</b>: recorro <b>in-orden</b> (izq → nodo → der) y agrego solo los <b>pares</b>. Como el ABB in-orden sale ordenado, la lista queda ordenada.`, highlight:{}, code:'listaDeParesNodo', line:1, stack:[], out:'[]'});
+  function rec(n){
+    const frame={label:'listaDeParesNodo', vars:{'self.dato':n.dato, 'listaPares':'['+lista.join(', ')+']'}};
+    stack.push(frame);
+    const cur=()=>conActual(visit,n.id);
+    steps.push({desc:`Entro sobre <b>${n.dato}</b>. ¿Tiene hijo izquierdo?`, highlight:cur(), code:'listaDeParesNodo', line:2, stack:snap()});
+    if(n.izq){
+      steps.push({desc:`Sí → primero recorro la izquierda (<b>${n.izq.dato}</b>).`, highlight:cur(), code:'listaDeParesNodo', line:3, stack:snap()});
+      rec(n.izq);
+    }
+    const par = n.dato%2===0;
+    steps.push({desc:`¿<b>esPar(${n.dato})</b>? ${par?'<b>Sí</b>':'No'}.`, highlight:cur(), code:'listaDeParesNodo', line:4, stack:snap()});
+    if(par){
+      lista.push(n.dato); frame.vars['listaPares']='['+lista.join(', ')+']';
+      steps.push({desc:`<b>listaPares.append(${n.dato})</b> → ${'['+lista.join(', ')+']'}`, highlight:(()=>{const h=conActual(visit,n.id);h[n.id]='found';return h;})(), code:'listaDeParesNodo', line:5, stack:snap(), out:'['+lista.join(', ')+']'});
+    }
+    visit[n.id] = par?'found':'visited';
+    if(n.der){
+      steps.push({desc:`¿Tiene hijo derecho? Sí → recorro la derecha (<b>${n.der.dato}</b>).`, highlight:conActual(visit,n.der.id), code:'listaDeParesNodo', line:7, stack:snap()});
+      rec(n.der);
+    }
+    stack.pop();
+    steps.push({desc:`Termina listaDeParesNodo(${n.dato}) y retorna. Se desapila.`, highlight:{...visit}, code:'listaDeParesNodo', line:1, stack:snap()});
+  }
+  rec(raiz);
+  steps.push({desc:`Lista final de pares (ordenada) = <b>${'['+lista.join(', ')+']'}</b>. ✅`, highlight:{...visit}, code:'listaDeParesNodo', line:1, stack:[], out:'['+lista.join(', ')+']'});
+  return steps;
+}
+
+function traceEliminar(dato){
+  if(!raiz) return [{desc:'Árbol vacío.', highlight:{}, code:'eliminarNodo', line:1, stack:[]}];
+  if(!existe(dato)) return [{desc:`<b>${dato}</b> no está en el árbol → no se elimina.`, highlight:{}, code:'eliminarNodo', line:2, stack:[]}];
+  const work = clonar(raiz);
+  let rootRef = work;
+  const steps=[], stack=[];
+  const snap=()=>stack.map(f=>({label:f.label, vars:{...f.vars}}));
+  const snapTree=()=>clonar(rootRef);
+  const maxOf=n=>{ if(!n)return null; while(n.der)n=n.der; return n; };
+  const minOf=n=>{ if(!n)return null; while(n.izq)n=n.izq; return n; };
+  function bph(root,d){
+    function rec(self){
+      let p=null,h=null,l=null;
+      if(d<self.dato){ if(self.izq){ if(self.izq.dato===d){p=self;h=self.izq;l='izq';} else return rec(self.izq); } }
+      if(d>self.dato){ if(self.der){ if(self.der.dato===d){p=self;h=self.der;l='der';} else return rec(self.der); } }
+      return [p,h,l];
+    }
+    return rec(root);
+  }
+  function hlDel(hijo,padre,reemplazo){ const h={}; if(padre)h[padre.id]='path'; if(hijo)h[hijo.id]='target'; if(reemplazo)h[reemplazo.id]='found'; return h; }
+  function push(o){ steps.push(Object.assign({treeSnap:snapTree()}, o)); }
+
+  function elim(d){
+    const frame={label:'eliminarNodo', vars:{'datoDel':d}};
+    stack.push(frame);
+    const [padre,hijo,lado]=bph(rootRef,d);
+    push({desc:`<b>eliminarNodo(${d})</b> → <b>buscarPadreHijo(${d})</b> devuelve padre=<b>${padre?padre.dato:'None'}</b>, hijo=<b>${hijo?hijo.dato:'None'}</b>, lado=<b>${lado?(lado==='izq'?'izquierdo':'derecho'):'None'}</b>.`, code:'eliminarNodo', line:2, stack:snap(), highlight:hlDel(hijo,padre)});
+    if(!padre){
+      push({desc:`nodoPadre = None → este método no hace nada.`, code:'eliminarNodo', line:3, stack:snap(), highlight:{}});
+      stack.pop(); return;
+    }
+    frame.vars['lado']=lado==='izq'?'izquierdo':'derecho';
+    push({desc:`nodoPadre ≠ None → busco reemplazo con <b>predecesorNodo()</b> (máx del subárbol izquierdo de ${hijo.dato}).`, code:'eliminarNodo', line:4, stack:snap(), highlight:hlDel(hijo,padre)});
+    let reemplazo=maxOf(hijo.izq);
+    if(!reemplazo){
+      push({desc:`Predecesor = None → uso <b>sucesorNodo()</b> (mín del subárbol derecho).`, code:'eliminarNodo', line:6, stack:snap(), highlight:hlDel(hijo,padre)});
+      reemplazo=minOf(hijo.der);
+    }
+    frame.vars['nodoReemplazo']=reemplazo?reemplazo.dato:'None';
+    push({desc:`nodoReemplazo = <b>${reemplazo?reemplazo.dato:'None'}</b>.`, code:'eliminarNodo', line:7, stack:snap(), highlight:hlDel(hijo,padre,reemplazo)});
+    if(reemplazo){
+      push({desc:`≠ None → <b>recursión</b>: self.eliminarNodo(${reemplazo.dato}) para sacar el reemplazo de su posición actual.`, code:'eliminarNodo', line:8, stack:snap(), highlight:hlDel(hijo,padre,reemplazo)});
+      elim(reemplazo.dato);
+      reemplazo.izq=hijo.izq;
+      push({desc:`Reconecto: <b>nodoReemplazo.izquierdo = (hijos izq de ${hijo.dato})</b>.`, code:'eliminarNodo', line:9, stack:snap(), highlight:hlDel(hijo,padre,reemplazo)});
+      reemplazo.der=hijo.der;
+      push({desc:`Reconecto: <b>nodoReemplazo.derecho = (hijos der de ${hijo.dato})</b>.`, code:'eliminarNodo', line:10, stack:snap(), highlight:hlDel(hijo,padre,reemplazo)});
+    }
+    if(lado==='izq') padre.izq=reemplazo; else padre.der=reemplazo;
+    push({desc:`<b>nodoPadre.${lado==='izq'?'izquierdo':'derecho'} = ${reemplazo?reemplazo.dato:'None'}</b>. Nodo <b>${hijo.dato}</b> eliminado. ✅`, code:'eliminarNodo', line: lado==='izq'?12:14, stack:snap(), highlight: reemplazo?{[reemplazo.id]:'found'}:{[padre.id]:'path'}});
+    stack.pop();
+  }
+
+  if(dato===rootRef.dato){
+    stack.push({label:'eliminar', vars:{'datoDel':dato}});
+    const oldRoot=rootRef;
+    push({desc:`<b>${dato}</b> es la <b>raíz</b> → caso especial en <b>ABB.eliminar</b>.`, code:'eliminar', line:3, stack:snap(), highlight:{[oldRoot.id]:'target'}});
+    let reemplazo=maxOf(oldRoot.izq);
+    push({desc:`nodoReemplazo = predecesor (máx subárbol izquierdo) = <b>${reemplazo?reemplazo.dato:'None'}</b>.`, code:'eliminar', line:4, stack:snap(), highlight: reemplazo?{[oldRoot.id]:'target',[reemplazo.id]:'found'}:{[oldRoot.id]:'target'}});
+    if(!reemplazo){
+      reemplazo=minOf(oldRoot.der);
+      push({desc:`Era None → sucesor (mín subárbol derecho) = <b>${reemplazo?reemplazo.dato:'None'}</b>.`, code:'eliminar', line:6, stack:snap(), highlight: reemplazo?{[oldRoot.id]:'target',[reemplazo.id]:'found'}:{[oldRoot.id]:'target'}});
+    }
+    if(reemplazo){
+      push({desc:`≠ None → <b>recursión</b>: self.__raiz.eliminarNodo(${reemplazo.dato}).`, code:'eliminar', line:8, stack:snap(), highlight:{[oldRoot.id]:'target',[reemplazo.id]:'found'}});
+      elim(reemplazo.dato);
+      reemplazo.izq=oldRoot.izq;
+      reemplazo.der=oldRoot.der;
+      rootRef=reemplazo;
+      push({desc:`nodoReemplazo hereda los hijos de la raíz vieja y pasa a ser la <b>nueva raíz</b>.`, code:'eliminar', line:9, stack:snap(), highlight:{[reemplazo.id]:'found'}});
+    } else {
+      rootRef=null;
+    }
+    push({desc:`<b>self.__raiz = ${reemplazo?reemplazo.dato:'None'}</b>. Raíz <b>${dato}</b> eliminada. ✅`, code:'eliminar', line:11, stack:[], highlight: reemplazo?{[reemplazo.id]:'found'}:{}});
+    stack.pop();
+  } else {
+    push({desc:`<b>${dato}</b> no es la raíz → <b>self.__raiz.eliminarNodo(${dato})</b>.`, code:'eliminar', line:13, stack:[], highlight:{}});
+    elim(dato);
+  }
+
+  steps[steps.length-1].mutate=()=>{ raiz=rootRef; };
+  return steps;
+}
+
+function traceBuscarPadreHijo(dato){
+  if(!raiz) return [{desc:'Árbol vacío.', highlight:{}, code:'buscarPadreHijo', line:1, stack:[], out:'→ (None, None, None)'}];
+  const steps=[], camino=[], stack=[];
+  const snap=()=>stack.map(f=>({label:f.label, vars:{...f.vars}}));
+  let resultado=[null,null,null];
+  (function rec(self){
+    stack.push({label:'buscarPadreHijo', vars:{'self.dato':self.dato, 'datoBusc':dato}});
+    camino.push(self.id);
+    steps.push({desc:`Entro sobre <b>${self.dato}</b>. Devuelve (padre, hijo, lado) del nodo ${dato}.`, highlight:pathHighlight(camino,self), code:'buscarPadreHijo', line:2, stack:snap()});
+    if(dato < self.dato){
+      steps.push({desc:`¿<b>${dato} &lt; ${self.dato}</b>? Sí. ¿Tiene hijo izquierdo?`, highlight:pathHighlight(camino,self), code:'buscarPadreHijo', line:5, stack:snap()});
+      if(self.izq){
+        if(self.izq.dato===dato){
+          steps.push({desc:`El hijo izquierdo (<b>${self.izq.dato}</b>) <b>es</b> el buscado → padre=<b>${self.dato}</b>, hijo=<b>${self.izq.dato}</b>, lado=<b>"izquierdo"</b>. ✅`, highlight:(()=>{const h=pathHighlight(camino,self);h[self.id]='found';h[self.izq.id]='target';return h;})(), code:'buscarPadreHijo', line:8, stack:snap(), out:`→ (${self.dato}, ${self.izq.dato}, "izquierdo")`});
+          resultado=[self,self.izq,'izquierdo'];
+        } else {
+          steps.push({desc:`El hijo izquierdo (<b>${self.izq.dato}</b>) no es → <b>recursión</b> sobre él.`, highlight:pathHighlight(camino,self), code:'buscarPadreHijo', line:12, stack:snap()});
+          resultado=rec(self.izq);
+        }
+      } else {
+        steps.push({desc:`No tiene hijo izquierdo → queda (None, None, None).`, highlight:pathHighlight(camino,self), code:'buscarPadreHijo', line:21, stack:snap()});
+      }
+    } else if(dato > self.dato){
+      steps.push({desc:`¿<b>${dato} &gt; ${self.dato}</b>? Sí. ¿Tiene hijo derecho?`, highlight:pathHighlight(camino,self), code:'buscarPadreHijo', line:13, stack:snap()});
+      if(self.der){
+        if(self.der.dato===dato){
+          steps.push({desc:`El hijo derecho (<b>${self.der.dato}</b>) <b>es</b> el buscado → padre=<b>${self.dato}</b>, hijo=<b>${self.der.dato}</b>, lado=<b>"derecho"</b>. ✅`, highlight:(()=>{const h=pathHighlight(camino,self);h[self.id]='found';h[self.der.id]='target';return h;})(), code:'buscarPadreHijo', line:16, stack:snap(), out:`→ (${self.dato}, ${self.der.dato}, "derecho")`});
+          resultado=[self,self.der,'derecho'];
+        } else {
+          steps.push({desc:`El hijo derecho (<b>${self.der.dato}</b>) no es → <b>recursión</b> sobre él.`, highlight:pathHighlight(camino,self), code:'buscarPadreHijo', line:20, stack:snap()});
+          resultado=rec(self.der);
+        }
+      } else {
+        steps.push({desc:`No tiene hijo derecho → queda (None, None, None).`, highlight:pathHighlight(camino,self), code:'buscarPadreHijo', line:21, stack:snap()});
+      }
+    } else {
+      steps.push({desc:`<b>${dato} == ${self.dato}</b> → este método <b>no</b> maneja ese caso (sería la raíz del subárbol). Devuelve (None, None, None).`, highlight:(()=>{const h=pathHighlight(camino,self);h[self.id]='target';return h;})(), code:'buscarPadreHijo', line:21, stack:snap(), out:'→ (None, None, None)'});
+    }
+    steps.push({desc:`<b>return</b> (padre, hijo, lado) desde el nodo ${self.dato}. Se desapila.`, highlight:pathHighlight(camino,self), code:'buscarPadreHijo', line:21, stack:snap()});
+    stack.pop(); camino.pop();
+    return resultado;
+  })(raiz);
+  return steps;
+}
+
 /* ===== Conexión UI ===== */
 function leerValor(){ const v = parseInt(document.getElementById('valor').value,10); return Number.isNaN(v)?null:v; }
 function leerValor2(){ const v = parseInt(document.getElementById('valor2').value,10); return Number.isNaN(v)?null:v; }
+function pedirDatoN(){
+  const inp = document.getElementById('valor2');
+  if(sidebar.classList.contains('menu-closed')) sidebar.classList.remove('menu-closed');
+  inp.focus();
+  inp.classList.add('ring-2','ring-bad');
+  setTimeout(()=>inp.classList.remove('ring-2','ring-bad'), 1500);
+  alert('Ingresá un número en el campo "N" (sección Consultas) para esta operación.');
+}
 
 document.querySelectorAll('[data-op]').forEach(b=>{
   b.addEventListener('click', ()=>{
     const op = b.dataset.op;
     if(op==='insertar'){ const v=leerValor(); if(v===null)return; cargarSteps(traceInsertar(v)); abrirDebugSiDesktop(); document.getElementById('valor').value = Math.floor(Math.random()*99)+1; }
     else if(op==='buscar'){ const v=leerValor(); if(v===null)return; cargarSteps(traceBuscar(v)); abrirDebugSiDesktop(); }
-    else if(op==='eliminar'){ const v=leerValor(); if(v===null)return; cargarSteps(stepsEliminar(v)); }
+    else if(op==='eliminar'){ const v=leerValor(); if(v===null)return; cargarSteps(traceEliminar(v)); abrirDebugSiDesktop(); }
     else if(op==='pre'){ cargarSteps(tracePreOrden()); abrirDebugSiDesktop(); }
     else if(op==='in'){ cargarSteps(traceInOrden()); abrirDebugSiDesktop(); }
     else if(op==='post'){ cargarSteps(tracePostOrden()); abrirDebugSiDesktop(); }
     else if(op==='ejemplo'){ raiz=null; [50,30,70,20,40,60,80,10,25].forEach(x=>insertar(x)); salida.textContent='—'; cargarSteps([{desc:'Árbol de ejemplo cargado. Probá recorridos, buscar o eliminar.', highlight:{}}]); }
-    else if(op==='aleatorio'){ const v=Math.floor(Math.random()*99)+1; document.getElementById('valor').value=v; cargarSteps(stepsInsertar(v)); }
+    else if(op==='aleatorio'){ document.getElementById('valor').value = Math.floor(Math.random()*99)+1; document.getElementById('valor').focus(); }
     else if(op==='vaciar'){ raiz=null; salida.textContent='—'; cargarSteps([{desc:'Árbol vaciado.', highlight:{}}]); }
-    else if(op==='minimo'){ cargarSteps(stepsMinimo()); }
-    else if(op==='maximo'){ cargarSteps(stepsMaximo()); }
+    else if(op==='minimo'){ cargarSteps(traceMinimo()); abrirDebugSiDesktop(); }
+    else if(op==='maximo'){ cargarSteps(traceMaximo()); abrirDebugSiDesktop(); }
     else if(op==='peso'){ cargarSteps(tracePeso()); abrirDebugSiDesktop(); }
     else if(op==='profundidad'){ cargarSteps(traceAltura()); abrirDebugSiDesktop(); }
-    else if(op==='cantidadHojas'){ cargarSteps(stepsHojas()); }
+    else if(op==='cantidadHojas'){ cargarSteps(traceCantHojas()); abrirDebugSiDesktop(); }
     else if(op==='estaVacio'){ cargarSteps(stepsEstaVacio()); }
-    else if(op==='predecesor'){ cargarSteps(stepsPredecesor()); }
-    else if(op==='sucesor'){ cargarSteps(stepsSucesor()); }
-    else if(op==='listaDePares'){ cargarSteps(stepsListaPares()); }
-    else if(op==='profundidadDato'){ const v=leerValor2(); if(v===null)return; cargarSteps(stepsProfundidadDato(v)); }
-    else if(op==='cantidadNodosNivel'){ const v=leerValor2(); if(v===null)return; cargarSteps(stepsNodosNivel(v)); }
-    else if(op==='grado'){ const v=leerValor2(); if(v===null)return; cargarSteps(stepsGrado(v)); }
+    else if(op==='predecesor'){ cargarSteps(tracePredecesor()); abrirDebugSiDesktop(); }
+    else if(op==='sucesor'){ cargarSteps(traceSucesor()); abrirDebugSiDesktop(); }
+    else if(op==='listaDePares'){ cargarSteps(traceListaPares()); abrirDebugSiDesktop(); }
+    else if(op==='profundidadDato'){ const v=leerValor2(); if(v===null){ pedirDatoN(); return; } cargarSteps(traceProfundidadDato(v)); abrirDebugSiDesktop(); }
+    else if(op==='cantidadNodosNivel'){ const v=leerValor2(); if(v===null){ pedirDatoN(); return; } cargarSteps(traceNodosNivel(v)); abrirDebugSiDesktop(); }
+    else if(op==='grado'){ const v=leerValor2(); if(v===null){ pedirDatoN(); return; } cargarSteps(traceGrado(v)); abrirDebugSiDesktop(); }
+    else if(op==='buscarPadreHijo'){ const v=leerValor2(); if(v===null){ pedirDatoN(); return; } cargarSteps(traceBuscarPadreHijo(v)); abrirDebugSiDesktop(); }
   });
 });
 /* ===== Toggle del menú lateral ===== */
@@ -1056,6 +1626,22 @@ document.getElementById('toggleDebug').addEventListener('click', ()=>{
 function abrirDebugSiDesktop(){
   if(window.matchMedia('(min-width: 768px)').matches){ dbgPanel.classList.remove('panel-closed'); }
 }
+// arrastre para ensanchar el debugger
+(function(){
+  const rz = document.getElementById('dbgResizer');
+  let redim=false;
+  rz.addEventListener('pointerdown', e=>{
+    redim=true; rz.setPointerCapture(e.pointerId);
+    document.body.classList.add('select-none'); e.preventDefault();
+  });
+  window.addEventListener('pointermove', e=>{
+    if(!redim) return;
+    const min=340, max=Math.min(760, window.innerWidth*0.7);
+    const w = Math.max(min, Math.min(max, window.innerWidth - e.clientX));
+    dbgPanel.style.setProperty('--dbg-w', w+'px');
+  });
+  window.addEventListener('pointerup', ()=>{ redim=false; document.body.classList.remove('select-none'); });
+})();
 
 /* ===== Botones de zoom ===== */
 function zoomCentro(factor){
