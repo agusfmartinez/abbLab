@@ -393,7 +393,7 @@ const CODE = {
     '        nodoAux = nodoAux.siguiente.siguiente',
   ],
   recorridoSalteado:[
-    'def recorridoSalteado(self):        # versión correcta',
+    'def recorridoSalteado(self):',
     '    nodoAux = self.__primero',
     '    while nodoAux != None:',
     '        print(nodoAux.dato)',
@@ -891,7 +891,7 @@ function traceDuplicarNodos(){
 function traceSalteado(){
   const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
   const sal=[]; const hv={};
-  steps.push({desc:`Recorrido <b>salteado</b> (uno sí, uno no). ⚠️ El código del profe tenía un bug de doble salto; esta es la versión correcta.`, code:'recorridoSalteado', line:2, vars:V({}), list:snap(), highlight:{}, out:'[]'});
+  steps.push({desc:`Recorrido <b>salteado</b>: visito uno sí, uno no (salto de a un nodo).`, code:'recorridoSalteado', line:2, vars:V({}), list:snap(), highlight:{}, out:'[]'});
   let i=0;
   while(i < w.length){
     sal.push(w[i].dato);
