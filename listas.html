@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista Lab - Práctica interactiva de Listas Enlazadas</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: { colors: {
+      bg:'#0f172a', panel:'#1e293b', panel2:'#273449',
+      txt:'#e2e8f0', muted:'#94a3b8', accent:'#38bdf8',
+      ok:'#22c55e', bad:'#ef4444', line:'#334155'
+    } } }
+  };
+</script>
+<style type="text/tailwindcss">
+  @layer components {
+    .card       { @apply bg-panel2 border border-line rounded-xl p-3; }
+    .card-title { @apply m-0 mb-2 text-[13px] uppercase tracking-wide text-muted font-semibold; }
+    .btn        { @apply cursor-pointer border border-slate-600 bg-slate-700 text-txt px-3 py-2 rounded-lg text-[13px] transition hover:bg-slate-600 hover:border-accent disabled:opacity-40 disabled:cursor-not-allowed; }
+    .btn-primary{ @apply bg-accent text-[#04283a] border-accent font-semibold hover:brightness-110; }
+    .btn-sm     { @apply px-2.5 py-1.5 text-xs; }
+    .field      { @apply px-2 py-2 rounded-lg border border-slate-600 bg-bg text-txt text-sm; }
+  }
+</style>
+<style>
+  :root{ --accent:#38bdf8; --ok:#22c55e; --bad:#ef4444; --txt:#e2e8f0; --muted:#94a3b8; }
+  .no-scrollbar{ scrollbar-width:none; -ms-overflow-style:none; }
+  .no-scrollbar::-webkit-scrollbar{ display:none; }
+  .step-desc b{ color:var(--accent); }
+  #sidebar{ transition: margin-left .35s cubic-bezier(.4,0,.2,1), transform .35s cubic-bezier(.4,0,.2,1), opacity .3s ease; }
+  #sidebar.menu-closed{ transform: translateX(-100%); opacity:0; pointer-events:none; }
+  @media(min-width:768px){ #sidebar.menu-closed{ transform:none; margin-left:-340px; opacity:0; } }
+  #debugger{ transition: margin-right .35s cubic-bezier(.4,0,.2,1), transform .35s cubic-bezier(.4,0,.2,1), opacity .3s ease; }
+  #debugger.panel-closed{ transform: translateX(100%); opacity:0; pointer-events:none; }
+  @media(min-width:768px){ #debugger.panel-closed{ transform:none; margin-right:calc(var(--dbg-w,440px) * -1); opacity:0; } }
+  .dbg-line{ white-space:pre; padding:1px 6px; border-left:2px solid transparent; border-radius:2px; }
+  .dbg-on{ background:rgba(56,189,248,.16); border-left-color:var(--accent); }
+  .dbg-ln{ display:inline-block; width:1.7em; color:#64748b; user-select:none; }
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;margin-left:6px}
+  .badge.ok{background:#14532d;color:#bbf7d0}
+  .badge.bad{background:#7f1d1d;color:#fecaca}
+  input[type=range]{accent-color:var(--accent)}
+  /* nodos de la lista */
+  .lnode{ display:inline-flex; align-items:stretch; border:2px solid #64748b; border-radius:10px; overflow:hidden; background:#334155; transition:.2s; }
+  .ldato{ padding:10px 14px; font-weight:700; font-size:16px; display:flex; align-items:center; }
+  .lptr{ padding:10px 8px; background:rgba(0,0,0,.25); color:#94a3b8; display:flex; align-items:center; font-size:12px; }
+  .lnode.aux{ border-color:var(--accent); background:#0369a1; box-shadow:0 0 0 3px rgba(56,189,248,.3); }
+  .lnode.nuevo{ border-color:var(--ok); background:#14532d; }
+  .lnode.target{ border-color:var(--bad); background:#7f1d1d; }
+  .lnode.found{ border-color:var(--ok); background:#166534; }
+  .lnode.prev{ border-color:#a78bfa; background:#4c1d95; }
+  .lnode.visited{ opacity:.55; }
+  .larrow{ color:#64748b; font-size:22px; margin:0 6px; user-select:none; }
+  .lhead{ color:var(--accent); font-weight:700; font-size:13px; }
+  .lnull{ color:var(--muted); font-weight:700; font-size:13px; border:1px dashed #475569; border-radius:8px; padding:6px 10px; }
+  .chain{ display:flex; align-items:center; flex-wrap:wrap; gap:2px; justify-content:center; }
+  .chain.clon{ margin-top:26px; }
+  .clon-label,.ghost-label{ color:var(--muted); font-size:12px; margin-right:8px; }
+  .ghost-wrap{ display:flex; align-items:center; justify-content:center; margin-bottom:26px; }
+</style>
+</head>
+<body class="m-0 h-screen flex flex-col bg-bg text-txt font-sans overflow-hidden">
+<header class="px-4 py-2.5 bg-panel border-b border-line flex items-center gap-3 flex-wrap">
+  <button id="toggleMenu" class="btn btn-sm" aria-label="Menú">☰ Menú</button>
+  <h1 class="m-0 text-xl md:text-2xl text-accent">🔗 Lista Lab</h1>
+  <span class="hidden sm:inline text-xs text-muted">Práctica interactiva de Listas Enlazadas</span>
+  <a href="index.html" class="btn btn-sm no-underline">🌳 Árboles</a>
+  <button id="toggleDebug" class="btn btn-sm ml-auto" aria-label="Debugger">🐞 Debug</button>
+</header>
+
+<div class="relative flex flex-1 min-h-0 overflow-hidden">
+  <aside id="sidebar" class="absolute md:relative z-30 inset-y-0 left-0 w-[280px] md:w-[340px] md:shrink-0 h-full bg-panel border-r border-line p-3.5 flex flex-col gap-3.5 overflow-y-auto no-scrollbar shadow-2xl md:shadow-none">
+
+    <div class="card">
+      <h2 class="card-title">Datos</h2>
+      <div class="flex gap-2 flex-wrap items-center">
+        <input id="dato" type="number" placeholder="dato" value="15" class="field w-20">
+        <input id="pos" type="number" placeholder="pos" class="field w-20">
+        <button class="btn btn-sm" data-op="aleatorio">+ Random</button>
+      </div>
+      <div class="text-[11px] text-muted mt-1.5">"dato" = valor · "pos" = posición (0 = primero)</div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Operaciones</h2>
+      <div class="grid grid-cols-2 gap-2">
+        <button class="btn btn-sm btn-primary" data-op="agregar">Agregar al final</button>
+        <button class="btn btn-sm" data-op="insertar">Insertar (pos)</button>
+        <button class="btn btn-sm" data-op="eliminar">Eliminar (pos)</button>
+        <button class="btn btn-sm" data-op="obtener">Obtener (pos)</button>
+        <button class="btn btn-sm" data-op="asignar">Asignar (pos)</button>
+        <button class="btn btn-sm" data-op="clonar">Clonar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Consultas</h2>
+      <div class="grid grid-cols-2 gap-2">
+        <button class="btn btn-sm" data-op="recorrer">Recorrer</button>
+        <button class="btn btn-sm" data-op="tamano">Tamaño</button>
+        <button class="btn btn-sm" data-op="estaVacia">¿Está vacía?</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Utilidades</h2>
+      <div class="flex gap-2 flex-wrap">
+        <button class="btn btn-sm" data-op="ejemplo">Ejemplo</button>
+        <button class="btn btn-sm" data-op="vaciar">Vaciar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Datos de la lista</h2>
+      <div id="stats" class="text-[13px] leading-7 text-muted"></div>
+    </div>
+
+    <div class="mt-auto pt-2.5 text-[11px] text-muted text-center border-t border-line">
+      Proyecto con fines educativos.<br>
+      Desarrollado por <a href="https://agusfmartinez.vercel.app/" target="_blank" rel="noopener" class="text-accent no-underline hover:underline">Agustín Martínez</a>
+    </div>
+  </aside>
+
+  <section class="relative flex-1 overflow-hidden flex flex-col">
+    <div id="stage" class="flex-1 overflow-auto no-scrollbar flex items-center justify-center p-6"></div>
+
+    <div class="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] md:w-auto md:max-w-2xl bg-panel/90 backdrop-blur border border-line rounded-xl p-3 md:px-4 flex flex-col gap-3 items-stretch md:items-center shadow-2xl">
+      <div id="stepDesc" class="step-desc text-sm leading-relaxed text-center">Elegí una operación para ver el paso a paso.</div>
+      <div class="flex flex-col gap-1.5 items-center">
+        <div class="flex gap-2 justify-center">
+          <button id="btnPrev" class="btn btn-sm">◀ Anterior</button>
+          <button id="btnPlay" class="btn btn-sm btn-primary">▶ Auto</button>
+          <button id="btnNext" class="btn btn-sm">Siguiente ▶</button>
+        </div>
+        <div id="prog" class="text-xs text-muted text-center"></div>
+        <div class="flex items-center gap-2 text-xs text-muted">Velocidad
+          <input id="speed" type="range" min="200" max="1600" step="100" value="800">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside id="debugger" class="panel-closed absolute md:relative z-30 inset-y-0 right-0 w-[85vw] max-w-[340px] md:max-w-none md:w-[var(--dbg-w)] md:shrink-0 h-full bg-panel border-l border-line flex overflow-hidden shadow-2xl md:shadow-none" style="--dbg-w:440px">
+    <div id="dbgResizer" class="hidden md:block shrink-0 w-1.5 cursor-ew-resize hover:bg-accent/40 transition-colors" title="Arrastrá para ensanchar"></div>
+    <div class="flex-1 min-w-0 h-full overflow-y-auto no-scrollbar p-3.5 flex flex-col gap-3">
+      <div class="card">
+        <h2 class="card-title">Debugger — código</h2>
+        <div id="dbgCode" class="font-mono text-[12px] leading-5 overflow-x-auto no-scrollbar">
+          <span class="text-muted">Elegí una operación para ver el código ejecutándose línea por línea.</span>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">Variables</h2>
+        <div id="dbgVars" class="font-mono text-[12px] leading-6"><span class="text-muted">—</span></div>
+      </div>
+      <div class="text-[11px] text-muted px-1">
+        En listas el recorrido es <b>iterativo</b>: un puntero <b>nodoAux</b> camina con <b>nodoAux = nodoAux.siguiente</b>.
+      </div>
+      <div class="card">
+        <h2 class="card-title">Salida</h2>
+        <div id="salida" class="font-mono text-[15px] text-ok break-words min-h-[22px]">—</div>
+      </div>
+      <div class="card">
+        <h2 class="card-title">Datos del nodo</h2>
+        <div id="nodoInfo" class="text-[13px] leading-7 text-muted"><span class="text-muted">Sin nodo activo</span></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+"use strict";
+
+/* ===== Modelo (lista como array de nodos {id, dato}; el "siguiente" es el próximo del array) ===== */
+let idc = 0;
+function nid(){ return ++idc; }
+let lista = [];   // [{id, dato}, ...]
+
+/* ===== Código Python (del archivo del profe) para el debugger ===== */
+const CODE = {
+  agregarAlFinal:[
+    'def agregarAlFinal(self, dato):',
+    '    nuevo = Lista.__NodoLista(dato)',
+    '    if self.estaVacia():',
+    '        self.__primero = nuevo',
+    '    else:',
+    '        nodoAux = self.__primero',
+    '        while nodoAux.tieneSiguiente():',
+    '            nodoAux = nodoAux.siguiente',
+    '        nodoAux.siguiente = nuevo',
+  ],
+  insertar:[
+    'def insertar(self, dato, posIns):',
+    '    nuevo = Lista.__NodoLista(dato)',
+    '    if posIns >= 0:',
+    '        if self.estaVacia():',
+    '            self.__primero = nuevo',
+    '        elif posIns == 0:',
+    '            nuevo.siguiente = self.__primero',
+    '            self.__primero = nuevo',
+    '        elif posIns >= self.tamaño():',
+    '            self.agregarAlFinal(dato)',
+    '        else:',
+    '            nodoAux = self.__primero',
+    '            posAux = 0',
+    '            while posAux < posIns - 1:',
+    '                nodoAux = nodoAux.siguiente',
+    '                posAux += 1',
+    '            nuevo.siguiente = nodoAux.siguiente',
+    '            nodoAux.siguiente = nuevo',
+    '    else:',
+    '        raise IndexError("La posición debe ser >= 0")',
+  ],
+  eliminar:[
+    'def eliminar(self, posDel):',
+    '    datoDel = None',
+    '    if 0 <= posDel < self.tamaño():',
+    '        if posDel == 0:',
+    '            datoDel = self.__primero.dato',
+    '            self.__primero = self.__primero.siguiente',
+    '        else:',
+    '            nodoAux = self.__primero',
+    '            posAux = 0',
+    '            while posAux < posDel - 1:',
+    '                nodoAux = nodoAux.siguiente',
+    '                posAux += 1',
+    '            datoDel = nodoAux.siguiente.dato',
+    '            nodoAux.siguiente = nodoAux.siguiente.siguiente',
+    '        return datoDel',
+    '    else:',
+    '        raise IndexError("La posición es inválida")',
+  ],
+  obtener:[
+    'def obtener(self, posGet):',
+    '    datoGet = None',
+    '    if 0 <= posGet < self.tamaño():',
+    '        nodoAux = self.__primero',
+    '        posAux = 0',
+    '        while posAux < posGet:',
+    '            nodoAux = nodoAux.siguiente',
+    '            posAux += 1',
+    '        datoGet = nodoAux.dato',
+    '        return datoGet',
+    '    else:',
+    '        raise IndexError("La posición es inválida")',
+  ],
+  asignar:[
+    'def asignar(self, dato, posAsig):',
+    '    if 0 <= posAsig < self.tamaño():',
+    '        nodoAux = self.__primero',
+    '        posAux = 0',
+    '        while posAux < posAsig:',
+    '            nodoAux = nodoAux.siguiente',
+    '            posAux += 1',
+    '        nodoAux.dato = dato',
+    '    else:',
+    '        raise IndexError("Posicion invalida")',
+  ],
+  tamaño:[
+    'def tamaño(self):',
+    '    cantNodos = 0',
+    '    if not self.estaVacia():',
+    '        nodoAux = self.__primero',
+    '        while nodoAux != None:',
+    '            cantNodos += 1',
+    '            nodoAux = nodoAux.siguiente',
+    '    return cantNodos',
+  ],
+  clonar:[
+    'def clonar(self):',
+    '    listaClon = Lista()',
+    '    if not self.estaVacia():',
+    '        nodoAux = self.__primero',
+    '        while nodoAux != None:',
+    '            listaClon.agregarAlFinal(nodoAux.dato)',
+    '            nodoAux = nodoAux.siguiente',
+    '    return listaClon',
+  ],
+  estaVacia:[
+    'def estaVacia(self):',
+    '    return self.__primero == None',
+  ],
+  recorrer:[
+    'def __repr__(self):',
+    '    strLista = "primero"',
+    '    aux = self.__primero',
+    '    while aux != None:',
+    '        strLista += " -> " + str(aux.dato)',
+    '        aux = aux.siguiente',
+    '    return strLista + " -|"',
+  ],
+};
+
+/* ===== Render ===== */
+const stage = document.getElementById('stage');
+
+function boxHTML(node, cls){
+  return `<div class="lnode ${cls||''}"><span class="ldato">${node.dato}</span><span class="lptr">sig</span></div>`;
+}
+function chainHTML(arr, hl){
+  if(arr.length===0) return `<span class="lhead">primero</span><span class="larrow">→</span><span class="lnull">None</span>`;
+  let s = `<span class="lhead">primero</span><span class="larrow">→</span>`;
+  arr.forEach(n=>{ s += boxHTML(n, hl[n.id]||''); s += `<span class="larrow">→</span>`; });
+  s += `<span class="lnull">None</span>`;
+  return s;
+}
+function render(step){
+  const arr = (step && step.list) || lista.map(n=>({id:n.id,dato:n.dato}));
+  const hl = (step && step.highlight) || {};
+  let html = '';
+  if(step && step.ghost){
+    html += `<div class="ghost-wrap"><span class="ghost-label">nuevo →</span>${boxHTML({dato:step.ghost.dato},'nuevo')}</div>`;
+  }
+  html += `<div class="chain">${chainHTML(arr, hl)}</div>`;
+  if(step && step.clon){
+    html += `<div class="chain clon"><span class="clon-label">listaClon:</span>${chainHTML(step.clon, step.clonHl||{})}</div>`;
+  }
+  if(arr.length===0 && !(step && step.clon)){
+    html += `<div class="text-muted text-sm text-center mt-6">Lista vacía. Agregá un dato o cargá el ejemplo.</div>`;
+  }
+  stage.innerHTML = `<div>${html}</div>`;
+  actualizarStats(arr);
+}
+function actualizarStats(arr){
+  const s = document.getElementById('stats');
+  if(!arr.length){ s.innerHTML = `Vacía: <b style="color:var(--txt)">True</b><br>Tamaño: <b style="color:var(--txt)">0</b>`; return; }
+  s.innerHTML =
+    `Vacía: <b style="color:var(--txt)">False</b><br>`+
+    `Tamaño: <b style="color:var(--txt)">${arr.length}</b><br>`+
+    `Primero: <b style="color:var(--txt)">${arr[0].dato}</b><br>`+
+    `Último: <b style="color:var(--txt)">${arr[arr.length-1].dato}</b>`;
+}
+
+/* ===== Debugger ===== */
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function actualizarDebugger(step){
+  const codeEl = document.getElementById('dbgCode');
+  const varsEl = document.getElementById('dbgVars');
+  if(!step || !step.code || !CODE[step.code]){
+    codeEl.innerHTML = '<span class="text-muted">Elegí una operación para ver el código.</span>';
+    varsEl.innerHTML = '<span class="text-muted">—</span>';
+    return;
+  }
+  codeEl.innerHTML = CODE[step.code].map((ln,i)=>{
+    const on = (i+1)===step.line;
+    return `<div class="dbg-line${on?' dbg-on':''}"><span class="dbg-ln">${i+1}</span>${escHtml(ln)}</div>`;
+  }).join('');
+  const vs = step.vars || [];
+  varsEl.innerHTML = vs.length
+    ? vs.map(v=>`<div><span class="text-muted">${v.k}</span> = <b style="color:var(--txt)">${v.v}</b></div>`).join('')
+    : '<span class="text-muted">(sin variables activas)</span>';
+}
+function actualizarNodoInfo(step){
+  const el = document.getElementById('nodoInfo');
+  if(!step || !step.list){ el.innerHTML='<span class="text-muted">Sin nodo activo</span>'; return; }
+  const hl = step.highlight || {};
+  const prioridad = ['aux','found','target','nuevo','prev'];
+  let id = null;
+  for(const clase of prioridad){
+    for(const k in hl){ if(hl[k]===clase){ id=+k; break; } }
+    if(id!==null) break;
+  }
+  const idx = id!==null ? step.list.findIndex(n=>n.id===id) : -1;
+  if(idx<0){ el.innerHTML='<span class="text-muted">Sin nodo activo</span>'; return; }
+  const dato = step.list[idx].dato;
+  const sig = idx < step.list.length-1 ? step.list[idx+1].dato : 'None';
+  el.innerHTML =
+    `dato: <b style="color:var(--txt)">${dato}</b><br>`+
+    `siguiente: <b style="color:var(--txt)">${sig}</b>`;
+}
+
+/* ===== Motor paso a paso ===== */
+let steps=[], stepIdx=-1, playing=false, playTimer=null;
+const stepDesc=document.getElementById('stepDesc');
+const salida=document.getElementById('salida');
+const prog=document.getElementById('prog');
+
+function cargarSteps(nuevos){
+  detenerPlay();
+  steps = nuevos; stepIdx=-1;
+  salida.textContent='—';
+  irA(0);
+}
+function irA(i){
+  if(i<0||i>=steps.length) return;
+  if(i>stepIdx){ for(let k=stepIdx+1;k<=i;k++){ if(steps[k].mutate && !steps[k]._done){ steps[k].mutate(); steps[k]._done=true; } } }
+  stepIdx=i;
+  const s=steps[i];
+  stepDesc.innerHTML=s.desc;
+  if(s.out!==undefined) salida.textContent=s.out;
+  prog.textContent=`Paso ${i+1} de ${steps.length}`;
+  render(s);
+  actualizarDebugger(s);
+  actualizarNodoInfo(s);
+  document.getElementById('btnPrev').disabled=i===0;
+  document.getElementById('btnNext').disabled=i===steps.length-1;
+}
+function siguiente(){ if(stepIdx<steps.length-1) irA(stepIdx+1); else detenerPlay(); }
+function anterior(){ if(stepIdx>0) irA(stepIdx-1); }
+function play(){
+  if(playing){ detenerPlay(); return; }
+  if(stepIdx>=steps.length-1) irA(0);
+  playing=true; document.getElementById('btnPlay').textContent='⏸ Pausa';
+  const tick=()=>{ if(!playing) return; if(stepIdx>=steps.length-1){ detenerPlay(); return; } siguiente(); playTimer=setTimeout(tick,+document.getElementById('speed').value); };
+  playTimer=setTimeout(tick,+document.getElementById('speed').value);
+}
+function detenerPlay(){ playing=false; clearTimeout(playTimer); document.getElementById('btnPlay').textContent='▶ Auto'; }
+
+/* ===== Helpers de generación ===== */
+function copiaLista(){ return lista.map(n=>({id:n.id,dato:n.dato})); }
+function V(o){ return Object.entries(o).map(([k,v])=>({k,v})); }
+
+/* ===== Tracers ===== */
+function traceAgregar(dato){
+  const w = copiaLista();
+  const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const nuevo={id:nid(),dato};
+  steps.push({desc:`Creo un nodo <b>nuevo</b> con dato <b>${dato}</b> (su siguiente = None).`, code:'agregarAlFinal', line:2, vars:V({nuevo:dato}), list:snap(), ghost:{dato}, highlight:{}});
+  if(w.length===0){
+    steps.push({desc:`La lista está <b>vacía</b> → <b>primero = nuevo</b>.`, code:'agregarAlFinal', line:4, vars:V({nuevo:dato}), list:snap(), ghost:{dato}, highlight:{}});
+    w.push(nuevo);
+    steps.push({desc:`Agregado como primero. ✅`, code:'agregarAlFinal', line:4, vars:V({}), list:snap(), highlight:{[nuevo.id]:'nuevo'}});
+  } else {
+    let i=0;
+    steps.push({desc:`No está vacía → <b>nodoAux = primero</b>.`, code:'agregarAlFinal', line:6, vars:V({nodoAux:w[0].dato}), list:snap(), ghost:{dato}, highlight:{[w[0].id]:'aux'}});
+    while(i < w.length-1){
+      steps.push({desc:`nodoAux tiene siguiente → <b>nodoAux = nodoAux.siguiente</b>.`, code:'agregarAlFinal', line:8, vars:V({nodoAux:w[i+1].dato}), list:snap(), ghost:{dato}, highlight:{[w[i+1].id]:'aux'}});
+      i++;
+    }
+    steps.push({desc:`nodoAux (<b>${w[i].dato}</b>) es el último (no tiene siguiente) → <b>nodoAux.siguiente = nuevo</b>.`, code:'agregarAlFinal', line:9, vars:V({nodoAux:w[i].dato}), list:snap(), ghost:{dato}, highlight:{[w[i].id]:'aux'}});
+    w.push(nuevo);
+    steps.push({desc:`Enganchado al final. ✅`, code:'agregarAlFinal', line:9, vars:V({}), list:snap(), highlight:{[nuevo.id]:'nuevo'}});
+  }
+  steps[steps.length-1].mutate=()=>{ lista=w; };
+  return steps;
+}
+
+function traceInsertar(dato,pos){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const nuevo={id:nid(),dato}; const n0=w.length;
+  steps.push({desc:`Creo nodo <b>nuevo</b> = <b>${dato}</b>. Posición pedida: <b>${pos}</b>.`, code:'insertar', line:2, vars:V({nuevo:dato,posIns:pos}), list:snap(), ghost:{dato}, highlight:{}});
+  if(pos<0){ steps.push({desc:`posIns &lt; 0 → <b>IndexError</b>. <span class="badge bad">inválido</span>`, code:'insertar', line:20, vars:V({posIns:pos}), list:snap(), highlight:{}}); return steps; }
+  if(n0===0){
+    w.push(nuevo);
+    steps.push({desc:`Lista vacía → <b>primero = nuevo</b>. ✅`, code:'insertar', line:5, vars:V({}), list:snap(), highlight:{[nuevo.id]:'nuevo'}});
+  } else if(pos===0){
+    steps.push({desc:`posIns == 0 → al principio. <b>nuevo.siguiente = primero</b>, luego <b>primero = nuevo</b>.`, code:'insertar', line:7, vars:V({posIns:pos}), list:snap(), ghost:{dato}, highlight:{[w[0].id]:'prev'}});
+    w.unshift(nuevo);
+    steps.push({desc:`Insertado al principio. ✅`, code:'insertar', line:8, vars:V({}), list:snap(), highlight:{[nuevo.id]:'nuevo'}});
+  } else if(pos>=n0){
+    steps.push({desc:`posIns (${pos}) ≥ tamaño (${n0}) → equivale a <b>agregarAlFinal</b>.`, code:'insertar', line:10, vars:V({posIns:pos,'tamaño':n0}), list:snap(), ghost:{dato}, highlight:{}});
+    w.push(nuevo);
+    steps.push({desc:`Agregado al final. ✅`, code:'insertar', line:10, vars:V({}), list:snap(), highlight:{[nuevo.id]:'nuevo'}});
+  } else {
+    let i=0;
+    steps.push({desc:`Caso general: camino hasta la posición <b>${pos-1}</b> (la anterior). <b>nodoAux = primero, posAux = 0</b>.`, code:'insertar', line:12, vars:V({nodoAux:w[0].dato,posAux:0}), list:snap(), ghost:{dato}, highlight:{[w[0].id]:'aux'}});
+    while(i < pos-1){
+      i++;
+      steps.push({desc:`posAux (${i-1}) &lt; posIns-1 (${pos-1}) → avanzo. <b>posAux = ${i}</b>.`, code:'insertar', line:15, vars:V({nodoAux:w[i].dato,posAux:i}), list:snap(), ghost:{dato}, highlight:{[w[i].id]:'aux'}});
+    }
+    steps.push({desc:`nodoAux en pos ${pos-1} (<b>${w[i].dato}</b>). Reconecto: <b>nuevo.siguiente = nodoAux.siguiente</b>, luego <b>nodoAux.siguiente = nuevo</b>.`, code:'insertar', line:17, vars:V({nodoAux:w[i].dato,posAux:i}), list:snap(), ghost:{dato}, highlight:{[w[i].id]:'prev', [w[i+1].id]:'aux'}});
+    w.splice(pos,0,nuevo);
+    steps.push({desc:`Insertado en la posición ${pos}. ✅`, code:'insertar', line:18, vars:V({}), list:snap(), highlight:{[nuevo.id]:'nuevo'}});
+  }
+  steps[steps.length-1].mutate=()=>{ lista=w; };
+  return steps;
+}
+
+function traceEliminar(pos){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const n0=w.length;
+  if(!(pos>=0 && pos<n0)){ steps.push({desc:`Posición ${pos} fuera de rango (0..${n0-1}) → <b>IndexError</b>. <span class="badge bad">inválido</span>`, code:'eliminar', line:17, vars:V({posDel:pos,'tamaño':n0}), list:snap(), highlight:{}}); return steps; }
+  if(pos===0){
+    const d=w[0].dato;
+    steps.push({desc:`posDel == 0 → guardo el dato (<b>${d}</b>) y hago <b>primero = primero.siguiente</b> (salteo el primero).`, code:'eliminar', line:6, vars:V({posDel:0,datoDel:d}), list:snap(), highlight:{[w[0].id]:'target'}});
+    w.shift();
+    steps.push({desc:`Eliminado. Devuelve <b>${d}</b>. ✅`, code:'eliminar', line:15, vars:V({datoDel:d}), list:snap(), highlight:{}, out:`eliminar(0) → ${d}`});
+  } else {
+    let i=0;
+    steps.push({desc:`Camino hasta la posición <b>${pos-1}</b> (anterior). <b>nodoAux = primero, posAux = 0</b>.`, code:'eliminar', line:8, vars:V({nodoAux:w[0].dato,posAux:0}), list:snap(), highlight:{[w[0].id]:'aux'}});
+    while(i<pos-1){
+      i++;
+      steps.push({desc:`posAux (${i-1}) &lt; posDel-1 (${pos-1}) → avanzo. <b>posAux = ${i}</b>.`, code:'eliminar', line:12, vars:V({nodoAux:w[i].dato,posAux:i}), list:snap(), highlight:{[w[i].id]:'aux'}});
+    }
+    const victim=w[i+1]; const d=victim.dato;
+    steps.push({desc:`nodoAux en pos ${pos-1} (<b>${w[i].dato}</b>). Borro el siguiente (<b>${d}</b>): guardo su dato y hago <b>nodoAux.siguiente = nodoAux.siguiente.siguiente</b> (lo salteo).`, code:'eliminar', line:14, vars:V({nodoAux:w[i].dato,datoDel:d}), list:snap(), highlight:{[w[i].id]:'prev', [victim.id]:'target'}});
+    w.splice(i+1,1);
+    steps.push({desc:`Eliminado. Devuelve <b>${d}</b>. ✅`, code:'eliminar', line:15, vars:V({datoDel:d}), list:snap(), highlight:{}, out:`eliminar(${pos}) → ${d}`});
+  }
+  steps[steps.length-1].mutate=()=>{ lista=w; };
+  return steps;
+}
+
+function traceObtener(pos){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const n0=w.length;
+  if(!(pos>=0 && pos<n0)){ steps.push({desc:`Posición ${pos} fuera de rango → <b>IndexError</b>. <span class="badge bad">inválido</span>`, code:'obtener', line:12, vars:V({posGet:pos,'tamaño':n0}), list:snap(), highlight:{}}); return steps; }
+  let i=0;
+  steps.push({desc:`<b>nodoAux = primero, posAux = 0</b>. Camino hasta la posición <b>${pos}</b>.`, code:'obtener', line:4, vars:V({nodoAux:w[0].dato,posAux:0}), list:snap(), highlight:{[w[0].id]:'aux'}});
+  while(i<pos){
+    i++;
+    steps.push({desc:`posAux (${i-1}) &lt; posGet (${pos}) → avanzo. <b>posAux = ${i}</b>.`, code:'obtener', line:7, vars:V({nodoAux:w[i].dato,posAux:i}), list:snap(), highlight:{[w[i].id]:'aux'}});
+  }
+  steps.push({desc:`posAux == posGet. El dato en la posición ${pos} es <b>${w[i].dato}</b>. ✅`, code:'obtener', line:9, vars:V({nodoAux:w[i].dato,datoGet:w[i].dato}), list:snap(), highlight:{[w[i].id]:'found'}, out:`obtener(${pos}) → ${w[i].dato}`});
+  return steps;
+}
+
+function traceAsignar(dato,pos){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const n0=w.length;
+  if(!(pos>=0 && pos<n0)){ steps.push({desc:`Posición ${pos} fuera de rango → <b>IndexError</b>. <span class="badge bad">inválido</span>`, code:'asignar', line:9, vars:V({posAsig:pos,'tamaño':n0}), list:snap(), highlight:{}}); return steps; }
+  let i=0;
+  steps.push({desc:`<b>nodoAux = primero, posAux = 0</b>. Camino hasta la posición <b>${pos}</b>.`, code:'asignar', line:3, vars:V({nodoAux:w[0].dato,posAux:0}), list:snap(), highlight:{[w[0].id]:'aux'}});
+  while(i<pos){
+    i++;
+    steps.push({desc:`posAux (${i-1}) &lt; posAsig (${pos}) → avanzo. <b>posAux = ${i}</b>.`, code:'asignar', line:6, vars:V({nodoAux:w[i].dato,posAux:i}), list:snap(), highlight:{[w[i].id]:'aux'}});
+  }
+  const viejo=w[i].dato;
+  steps.push({desc:`posAux == posAsig. <b>nodoAux.dato = ${dato}</b> (antes ${viejo}). ✅`, code:'asignar', line:8, vars:V({nodoAux:dato,posAux:i}), list:(()=>{ w[i].dato=dato; return snap(); })(), highlight:{[w[i].id]:'found'}, out:`asignar(${dato}, ${pos}) — pos ${pos}: ${viejo} → ${dato}`});
+  steps[steps.length-1].mutate=()=>{ lista=w; };
+  return steps;
+}
+
+function traceTamano(){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  steps.push({desc:`<b>cantNodos = 0</b>. No hay atributo "largo": lo cuento caminando.`, code:'tamaño', line:2, vars:V({cantNodos:0}), list:snap(), highlight:{}});
+  if(w.length===0){
+    steps.push({desc:`Lista vacía → devuelve <b>0</b>. ✅`, code:'tamaño', line:8, vars:V({cantNodos:0}), list:snap(), highlight:{}, out:'tamaño() → 0'});
+    return steps;
+  }
+  const hv={};
+  for(let i=0;i<w.length;i++){
+    steps.push({desc:`nodoAux = <b>${w[i].dato}</b> (≠ None) → <b>cantNodos = ${i+1}</b>, avanzo.`, code:'tamaño', line:6, vars:V({nodoAux:w[i].dato,cantNodos:i+1}), list:snap(), highlight:Object.assign({},hv,{[w[i].id]:'aux'})});
+    hv[w[i].id]='visited';
+  }
+  steps.push({desc:`nodoAux == None → corta el while. Devuelve <b>${w.length}</b>. ✅`, code:'tamaño', line:8, vars:V({cantNodos:w.length}), list:snap(), highlight:{}, out:`tamaño() → ${w.length}`});
+  return steps;
+}
+
+function traceRecorrer(){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  let str='primero';
+  steps.push({desc:`strLista = "<b>primero</b>". aux = primero.`, code:'recorrer', line:3, vars:V({strLista:'"primero"'}), list:snap(), highlight:{}, out:str});
+  const hv={};
+  for(let i=0;i<w.length;i++){
+    str += ' -> ' + w[i].dato;
+    steps.push({desc:`aux = <b>${w[i].dato}</b> (≠ None) → agrego "-> ${w[i].dato}", avanzo.`, code:'recorrer', line:5, vars:V({aux:w[i].dato,strLista:'"'+str+'"'}), list:snap(), highlight:Object.assign({},hv,{[w[i].id]:'aux'}), out:str});
+    hv[w[i].id]='visited';
+  }
+  str += ' -|';
+  steps.push({desc:`aux == None → corta. Devuelve la cadena completa. ✅`, code:'recorrer', line:7, vars:V({strLista:'"'+str+'"'}), list:snap(), highlight:{}, out:str});
+  return steps;
+}
+
+function traceEstaVacia(){
+  const vacia = lista.length===0;
+  return [{desc:`<b>estaVacia()</b> devuelve <b>self.__primero == None</b>. Acá primero ${vacia?'<b>es</b>':'<b>no</b> es'} None → <b>${vacia}</b>.`, code:'estaVacia', line:2, vars:V({}), list:copiaLista(), highlight:{}, out:`estaVacia() → ${vacia?'True':'False'}`}];
+}
+
+function traceClonar(){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const clon=[]; const clonSnap=()=>clon.map(n=>({id:n.id,dato:n.dato}));
+  steps.push({desc:`Creo una <b>listaClon</b> vacía.`, code:'clonar', line:2, vars:V({}), list:snap(), clon:clonSnap(), highlight:{}});
+  if(w.length===0){
+    steps.push({desc:`La original está vacía → devuelvo la clon vacía. ✅`, code:'clonar', line:8, vars:V({}), list:snap(), clon:clonSnap(), highlight:{}});
+    return steps;
+  }
+  const hv={};
+  for(let i=0;i<w.length;i++){
+    clon.push({id:nid(),dato:w[i].dato});
+    steps.push({desc:`aux = <b>${w[i].dato}</b> → <b>listaClon.agregarAlFinal(${w[i].dato})</b>, avanzo.`, code:'clonar', line:6, vars:V({aux:w[i].dato}), list:snap(), clon:clonSnap(), highlight:Object.assign({},hv,{[w[i].id]:'aux'}), clonHl:{[clon[clon.length-1].id]:'nuevo'}});
+    hv[w[i].id]='visited';
+  }
+  steps.push({desc:`aux == None → corta. La clon es una copia <b>independiente</b>. ✅`, code:'clonar', line:8, vars:V({}), list:snap(), clon:clonSnap(), highlight:{}});
+  return steps;
+}
+
+/* ===== UI ===== */
+function leerDato(){ const v=parseInt(document.getElementById('dato').value,10); return Number.isNaN(v)?null:v; }
+function leerPos(){ const v=parseInt(document.getElementById('pos').value,10); return Number.isNaN(v)?null:v; }
+function pedirDato(campo){
+  const inp=document.getElementById(campo);
+  if(sidebar.classList.contains('menu-closed')) sidebar.classList.remove('menu-closed');
+  inp.focus(); inp.classList.add('ring-2','ring-bad'); setTimeout(()=>inp.classList.remove('ring-2','ring-bad'),1500);
+  alert(campo==='pos' ? 'Ingresá una posición en el campo "pos".' : 'Ingresá un valor en el campo "dato".');
+}
+
+document.querySelectorAll('[data-op]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const op=b.dataset.op;
+    if(op==='agregar'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} cargarSteps(traceAgregar(d)); abrirDebugSiDesktop(); }
+    else if(op==='insertar'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} const p=leerPos(); if(p===null){pedirDato('pos');return;} cargarSteps(traceInsertar(d,p)); abrirDebugSiDesktop(); }
+    else if(op==='eliminar'){ const p=leerPos(); if(p===null){pedirDato('pos');return;} cargarSteps(traceEliminar(p)); abrirDebugSiDesktop(); }
+    else if(op==='obtener'){ const p=leerPos(); if(p===null){pedirDato('pos');return;} cargarSteps(traceObtener(p)); abrirDebugSiDesktop(); }
+    else if(op==='asignar'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} const p=leerPos(); if(p===null){pedirDato('pos');return;} cargarSteps(traceAsignar(d,p)); abrirDebugSiDesktop(); }
+    else if(op==='clonar'){ cargarSteps(traceClonar()); abrirDebugSiDesktop(); }
+    else if(op==='recorrer'){ cargarSteps(traceRecorrer()); abrirDebugSiDesktop(); }
+    else if(op==='tamano'){ cargarSteps(traceTamano()); abrirDebugSiDesktop(); }
+    else if(op==='estaVacia'){ cargarSteps(traceEstaVacia()); abrirDebugSiDesktop(); }
+    else if(op==='ejemplo'){ lista=[10,20,30,40].map(d=>({id:nid(),dato:d})); cargarSteps([{desc:'Lista de ejemplo cargada (10, 20, 30, 40).', list:copiaLista(), highlight:{}}]); }
+    else if(op==='vaciar'){ lista=[]; cargarSteps([{desc:'Lista vaciada.', list:[], highlight:{}}]); }
+    else if(op==='aleatorio'){ document.getElementById('dato').value=Math.floor(Math.random()*99)+1; document.getElementById('dato').focus(); }
+  });
+});
+document.getElementById('btnNext').addEventListener('click', siguiente);
+document.getElementById('btnPrev').addEventListener('click', anterior);
+document.getElementById('btnPlay').addEventListener('click', play);
+
+/* ===== Paneles ===== */
+const sidebar=document.getElementById('sidebar');
+document.getElementById('toggleMenu').addEventListener('click', ()=>sidebar.classList.toggle('menu-closed'));
+if(window.matchMedia('(max-width: 767px)').matches){ sidebar.classList.add('menu-closed'); }
+
+const dbgPanel=document.getElementById('debugger');
+document.getElementById('toggleDebug').addEventListener('click', ()=>dbgPanel.classList.toggle('panel-closed'));
+function abrirDebugSiDesktop(){ if(window.matchMedia('(min-width: 768px)').matches){ dbgPanel.classList.remove('panel-closed'); } }
+
+(function(){
+  const rz=document.getElementById('dbgResizer'); let redim=false;
+  rz.addEventListener('pointerdown', e=>{ redim=true; rz.setPointerCapture(e.pointerId); document.body.classList.add('select-none'); e.preventDefault(); });
+  window.addEventListener('pointermove', e=>{ if(!redim) return; const min=340, max=Math.min(760, window.innerWidth*0.7); const w=Math.max(min,Math.min(max, window.innerWidth-e.clientX)); dbgPanel.style.setProperty('--dbg-w', w+'px'); });
+  window.addEventListener('pointerup', ()=>{ redim=false; document.body.classList.remove('select-none'); });
+})();
+
+render();
+</script>
+</body>
+</html>
