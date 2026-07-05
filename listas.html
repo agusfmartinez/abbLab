@@ -81,6 +81,10 @@
         <button class="btn btn-sm" data-op="aleatorio">+ Random</button>
       </div>
       <div class="text-[11px] text-muted mt-1.5">"dato" = valor · "pos" = posición (0 = primero)</div>
+      <div class="flex gap-2 flex-wrap mt-3 pt-3 border-t border-line">
+        <button class="btn btn-sm" data-op="ejemplo">Ejemplo</button>
+        <button class="btn btn-sm" data-op="vaciar">Vaciar</button>
+      </div>
     </div>
 
     <div class="card">
@@ -92,6 +96,8 @@
         <button class="btn btn-sm" data-op="obtener">Obtener (pos)</button>
         <button class="btn btn-sm" data-op="asignar">Asignar (pos)</button>
         <button class="btn btn-sm" data-op="clonar">Clonar</button>
+        <button class="btn btn-sm" data-op="intercambiar">Intercambiar 1º y 2º</button>
+        <button class="btn btn-sm" data-op="eliminarOcurrencias">Elim. ocurrencias (dato)</button>
       </div>
     </div>
 
@@ -101,14 +107,18 @@
         <button class="btn btn-sm" data-op="recorrer">Recorrer</button>
         <button class="btn btn-sm" data-op="tamano">Tamaño</button>
         <button class="btn btn-sm" data-op="estaVacia">¿Está vacía?</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2 class="card-title">Utilidades</h2>
-      <div class="flex gap-2 flex-wrap">
-        <button class="btn btn-sm" data-op="ejemplo">Ejemplo</button>
-        <button class="btn btn-sm" data-op="vaciar">Vaciar</button>
+        <button class="btn btn-sm" data-op="buscar">Buscar elemento</button>
+        <button class="btn btn-sm" data-op="primeroAlFinal">1º al final</button>
+        <button class="btn btn-sm" data-op="finalAlInicio">Último al inicio</button>
+        <button class="btn btn-sm" data-op="reemplazar">Reemplazar (d→p)</button>
+        <button class="btn btn-sm" data-op="duplicar">Duplicar</button>
+        <button class="btn btn-sm" data-op="duplicarNodos">Duplicar intercalado</button>
+        <button class="btn btn-sm" data-op="salteado">Recorrido salteado</button>
+        <button class="btn btn-sm" data-op="parImpar">Recorrido par/impar</button>
+        <button class="btn btn-sm" data-op="reemplazarMayores">Reemplazar mayores (d,p)</button>
+        <button class="btn btn-sm" data-op="insOrdAsc">Insertar ord. ↑ (d)</button>
+        <button class="btn btn-sm" data-op="insOrdDesc">Insertar ord. ↓ (d)</button>
+        <button class="btn btn-sm" data-op="insOrdAuto">Insertar ord. auto (d)</button>
       </div>
     </div>
 
@@ -290,6 +300,171 @@ const CODE = {
     '        strLista += " -> " + str(aux.dato)',
     '        aux = aux.siguiente',
     '    return strLista + " -|"',
+  ],
+  intercambiar:[
+    'def intercambiarPrimerosNodos(self):',
+    '    if self.__primero != None and self.__primero.siguiente != None:',
+    '        nodoPrimero = self.__primero',
+    '        nodoSegundo = nodoPrimero.siguiente',
+    '        nodoPrimero.siguiente = nodoSegundo.siguiente',
+    '        nodoSegundo.siguiente = nodoPrimero',
+    '        self.__primero = nodoSegundo',
+  ],
+  buscaElemento:[
+    'def buscaElemento(self, datoBusc):',
+    '    posiciones = Lista()',
+    '    nodoAux = self.__primero',
+    '    posAux = 0',
+    '    while nodoAux != None:',
+    '        if nodoAux.dato == datoBusc:',
+    '            posiciones.agregarAlFinal(posAux)',
+    '        nodoAux = nodoAux.siguiente',
+    '        posAux += 1',
+    '    return posiciones',
+  ],
+  eliminarElementoInicio:[
+    'def eliminarElementoInicio(self, elem):',
+    '    cant = 0',
+    '    while not self.estaVacia() and self.__primero.dato == elem:',
+    '        self.__primero = self.__primero.siguiente',
+    '        cant += 1',
+    '    return cant',
+  ],
+  eliminarElemento:[
+    'def eliminarElemento(self, elem):',
+    '    cant = self.eliminarElementoInicio(elem)',
+    '    if not self.estaVacia():',
+    '        nodoAux = self.__primero',
+    '        while nodoAux.tieneSiguiente():',
+    '            if nodoAux.siguiente.dato == elem:',
+    '                nodoAux.siguiente = nodoAux.siguiente.siguiente',
+    '                cant += 1',
+    '            else:',
+    '                nodoAux = nodoAux.siguiente',
+    '    return cant',
+  ],
+  primeroAlFinal:[
+    'def primeroAlFinal(self):',
+    '    if self.tamaño() > 1:',
+    '        nodoPrimero = self.__primero',
+    '        self.__primero = self.__primero.siguiente',
+    '        nodoPrimero.siguiente = None',
+    '        nodoAux = self.__primero',
+    '        while nodoAux.tieneSiguiente():',
+    '            nodoAux = nodoAux.siguiente',
+    '        nodoAux.siguiente = nodoPrimero',
+  ],
+  finalAlInicio:[
+    'def nodoFinalAlInicio(self):',
+    '    if self.tamaño() > 1:',
+    '        nodoAux = self.__primero',
+    '        while nodoAux.siguiente.siguiente != None:',
+    '            nodoAux = nodoAux.siguiente',
+    '        ultimo = nodoAux.siguiente',
+    '        nodoAux.siguiente = None',
+    '        ultimo.siguiente = self.__primero',
+    '        self.__primero = ultimo',
+  ],
+  reemplazar:[
+    'def reemplazar(self, datoViejo, datoNuevo):',
+    '    nodoAux = self.__primero',
+    '    while nodoAux != None:',
+    '        if nodoAux.dato == datoViejo:',
+    '            nodoAux.dato = datoNuevo',
+    '        nodoAux = nodoAux.siguiente',
+  ],
+  duplicar:[
+    'def duplicar(self):',
+    '    nodoAux = self.__primero',
+    '    posAux = 0',
+    '    tamInicial = self.tamaño()',
+    '    while posAux < tamInicial:',
+    '        self.agregarAlFinal(nodoAux.dato)',
+    '        nodoAux = nodoAux.siguiente',
+    '        posAux += 1',
+  ],
+  duplicarNodos:[
+    'def duplicarNodos(self):',
+    '    nodoAux = self.__primero',
+    '    while nodoAux != None:',
+    '        nuevo = Lista.__NodoLista(nodoAux.dato)',
+    '        nuevo.siguiente = nodoAux.siguiente',
+    '        nodoAux.siguiente = nuevo',
+    '        nodoAux = nodoAux.siguiente.siguiente',
+  ],
+  recorridoSalteado:[
+    'def recorridoSalteado(self):        # versión correcta',
+    '    nodoAux = self.__primero',
+    '    while nodoAux != None:',
+    '        print(nodoAux.dato)',
+    '        if nodoAux.siguiente != None:',
+    '            nodoAux = nodoAux.siguiente.siguiente',
+    '        else:',
+    '            nodoAux = None',
+  ],
+  recorridoParImpar:[
+    'def recorridoParImpar(self):',
+    '    nodoAux = self.__primero',
+    '    while nodoAux != None:',
+    '        print(nodoAux.dato)',
+    '        datoAux = nodoAux.dato',
+    '        nodoAux = nodoAux.siguiente',
+    '        if esImpar(datoAux) and nodoAux != None:',
+    '            nodoAux = nodoAux.siguiente',
+  ],
+  reemplazarMayores:[
+    'def reemplazarMayores(self, limite, multiplicador):',
+    '    nodoAux = self.__primero',
+    '    while nodoAux != None:',
+    '        if nodoAux.dato >= limite:',
+    '            nodoAux.dato *= multiplicador',
+    '        nodoAux = nodoAux.siguiente',
+  ],
+  insOrdAsc:[
+    'def insertarOrdenado(self, dato):        # lista ascendente',
+    '    nuevo = Lista.__NodoLista(dato)',
+    '    if self.estaVacia():',
+    '        self.__primero = nuevo',
+    '    elif dato <= self.__primero.dato:',
+    '        nuevo.siguiente = self.__primero',
+    '        self.__primero = nuevo',
+    '    else:',
+    '        nodoAux = self.__primero',
+    '        while nodoAux.tieneSiguiente() and nodoAux.siguiente.dato < dato:',
+    '            nodoAux = nodoAux.siguiente',
+    '        nuevo.siguiente = nodoAux.siguiente',
+    '        nodoAux.siguiente = nuevo',
+  ],
+  insOrdDesc:[
+    'def insertarOrdenadoMayorMenor(self, dato):   # lista descendente',
+    '    nuevo = Lista.__NodoLista(dato)',
+    '    if self.estaVacia():',
+    '        self.__primero = nuevo',
+    '    elif dato >= self.__primero.dato:',
+    '        nuevo.siguiente = self.__primero',
+    '        self.__primero = nuevo',
+    '    else:',
+    '        nodoAux = self.__primero',
+    '        while nodoAux.tieneSiguiente() and nodoAux.siguiente.dato > dato:',
+    '            nodoAux = nodoAux.siguiente',
+    '        nuevo.siguiente = nodoAux.siguiente',
+    '        nodoAux.siguiente = nuevo',
+  ],
+  ordenAscendente:[
+    'def ordenAscendente(self):',
+    '    nodoAux = self.__primero',
+    '    while nodoAux.tieneSiguiente() and nodoAux.siguiente.dato > nodoAux.dato:',
+    '        nodoAux = nodoAux.siguiente',
+    '    return not nodoAux.tieneSiguiente()',
+  ],
+  insOrdAuto:[
+    'def insertarOrdenado(self, dato):        # detecta el orden',
+    '    if self.estaVacia() or self.ordenAscendente():',
+    '        self.insertarOrdenadoMenorMayor(dato)',
+    '    elif self.ordenDescendente():',
+    '        self.insertarOrdenadoMayorMenor(dato)',
+    '    else:',
+    '        raise Exception("Lista desordenada")',
   ],
 };
 
@@ -577,6 +752,245 @@ function traceClonar(){
   return steps;
 }
 
+function traceIntercambiar(){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  if(w.length < 2){
+    steps.push({desc:`La lista tiene ${w.length} nodo(s) → no hay dos primeros para intercambiar. No hace nada.`, code:'intercambiar', line:2, vars:V({}), list:snap(), highlight:{}});
+    return steps;
+  }
+  const A=w[0], B=w[1]; const C = w.length>2 ? w[2].dato : 'None';
+  steps.push({desc:`Hay ≥ 2 nodos. <b>nodoPrimero = ${A.dato}</b> (A), <b>nodoSegundo = ${B.dato}</b> (B).`, code:'intercambiar', line:4, vars:V({nodoPrimero:A.dato, nodoSegundo:B.dato}), list:snap(), highlight:{[A.id]:'prev',[B.id]:'aux'}});
+  steps.push({desc:`<b>nodoPrimero.siguiente = nodoSegundo.siguiente</b> → A (${A.dato}) apunta a <b>${C}</b> (lo que seguía a B). Clave: guardo C antes de pisar.`, code:'intercambiar', line:5, vars:V({nodoPrimero:A.dato, nodoSegundo:B.dato}), list:snap(), highlight:{[A.id]:'prev',[B.id]:'aux'}});
+  steps.push({desc:`<b>nodoSegundo.siguiente = nodoPrimero</b> → B (${B.dato}) apunta a A (${A.dato}).`, code:'intercambiar', line:6, vars:V({nodoPrimero:A.dato, nodoSegundo:B.dato}), list:snap(), highlight:{[A.id]:'prev',[B.id]:'aux'}});
+  [w[0], w[1]] = [w[1], w[0]];
+  steps.push({desc:`<b>primero = nodoSegundo</b> → primero → ${B.dato} → ${A.dato} → ${C}. Intercambiados. ✅`, code:'intercambiar', line:7, vars:V({}), list:snap(), highlight:{[A.id]:'found',[B.id]:'found'}});
+  steps[steps.length-1].mutate=()=>{ lista=w; };
+  return steps;
+}
+
+function traceBuscaElemento(dato){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const pos=[]; const hv={};
+  steps.push({desc:`Creo <b>posiciones</b> = Lista() vacía. nodoAux = primero, posAux = 0. Busco todas las apariciones de <b>${dato}</b>.`, code:'buscaElemento', line:2, vars:V({posiciones:'[]',posAux:0}), list:snap(), highlight:{}, out:'[]'});
+  for(let i=0;i<w.length;i++){
+    const match = w[i].dato===dato;
+    steps.push({desc:`posAux ${i}: ¿<b>${w[i].dato} == ${dato}</b>? ${match?'<b>Sí</b> → agrego <b>'+i+'</b> a posiciones':'No'}.`, code:'buscaElemento', line:6, vars:V({nodoAux:w[i].dato,posAux:i,posiciones:'['+pos.join(', ')+']'}), list:snap(), highlight:Object.assign({},hv,{[w[i].id]:match?'found':'aux'}), out:'['+pos.join(', ')+']'});
+    if(match){ pos.push(i); hv[w[i].id]='found'; } else hv[w[i].id]='visited';
+  }
+  steps.push({desc:`nodoAux == None → corta. <b>posiciones = [${pos.join(', ')}]</b>. ✅`, code:'buscaElemento', line:10, vars:V({posiciones:'['+pos.join(', ')+']'}), list:snap(), highlight:hv, out:`buscaElemento(${dato}) → [${pos.join(', ')}]`});
+  return steps;
+}
+
+function traceEliminarOcurrencias(elem){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  let cant=0;
+  steps.push({desc:`Elimino <b>todas</b> las ocurrencias de <b>${elem}</b>. Primero las del <b>inicio</b> (la cabeza no tiene nodo anterior, va aparte).`, code:'eliminarElemento', line:2, vars:V({cant:0}), list:snap(), highlight:{}});
+  while(w.length>0 && w[0].dato===elem){
+    steps.push({desc:`primero (<b>${w[0].dato}</b>) == ${elem} → <b>primero = primero.siguiente</b>, cant = ${cant+1}.`, code:'eliminarElementoInicio', line:4, vars:V({cant:cant+1}), list:snap(), highlight:{[w[0].id]:'target'}});
+    w.shift(); cant++;
+    steps.push({desc:`Sacado del inicio. cant = <b>${cant}</b>.`, code:'eliminarElementoInicio', line:5, vars:V({cant}), list:snap(), highlight:{}});
+  }
+  steps.push({desc:`El primero ya no es ${elem} (o quedó vacía). Sigo con el resto. cant = <b>${cant}</b>.`, code:'eliminarElemento', line:3, vars:V({cant}), list:snap(), highlight:{}});
+  if(w.length>0){
+    let i=0;
+    steps.push({desc:`<b>nodoAux = primero</b> (${w[0].dato}). Reviso el <b>siguiente</b> de cada nodo.`, code:'eliminarElemento', line:4, vars:V({nodoAux:w[0].dato,cant}), list:snap(), highlight:{[w[0].id]:'aux'}});
+    while(i < w.length-1){
+      const sig=w[i+1];
+      if(sig.dato===elem){
+        steps.push({desc:`nodoAux.siguiente (<b>${sig.dato}</b>) == ${elem} → lo salteo: <b>nodoAux.siguiente = nodoAux.siguiente.siguiente</b>, cant = ${cant+1}. <b>No avanzo</b> (el nuevo siguiente puede ser otro ${elem}).`, code:'eliminarElemento', line:7, vars:V({nodoAux:w[i].dato,cant:cant+1}), list:snap(), highlight:{[w[i].id]:'aux',[sig.id]:'target'}});
+        w.splice(i+1,1); cant++;
+      } else {
+        steps.push({desc:`nodoAux.siguiente (<b>${sig.dato}</b>) != ${elem} → <b>avanzo</b>: nodoAux = nodoAux.siguiente.`, code:'eliminarElemento', line:10, vars:V({nodoAux:sig.dato,cant}), list:snap(), highlight:{[sig.id]:'aux'}});
+        i++;
+      }
+    }
+    steps.push({desc:`nodoAux no tiene más siguiente → corta el while.`, code:'eliminarElemento', line:5, vars:V({cant}), list:snap(), highlight: w[i]?{[w[i].id]:'visited'}:{}});
+  }
+  steps.push({desc:`Eliminadas <b>${cant}</b> ocurrencias de ${elem}. Devuelve ${cant}. ✅`, code:'eliminarElemento', line:11, vars:V({cant}), list:snap(), highlight:{}, out:`eliminarElemento(${elem}) → ${cant}`});
+  steps[steps.length-1].mutate=()=>{ lista=w; };
+  return steps;
+}
+
+/* ===== Ejercicios 5–12 ===== */
+function tracePrimeroAlFinal(){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  if(w.length<=1){ steps.push({desc:`tamaño ≤ 1 → no hay nada que mover.`, code:'primeroAlFinal', line:2, vars:V({}), list:snap(), highlight:{}}); return steps; }
+  const A=w[0];
+  steps.push({desc:`Guardo <b>nodoPrimero = ${A.dato}</b> (el primero).`, code:'primeroAlFinal', line:3, vars:V({nodoPrimero:A.dato}), list:snap(), highlight:{[A.id]:'prev'}});
+  steps.push({desc:`<b>primero = primero.siguiente</b> (nuevo primero: ${w[1].dato}) y <b>nodoPrimero.siguiente = None</b> (lo desengancho).`, code:'primeroAlFinal', line:4, vars:V({nodoPrimero:A.dato}), list:snap(), highlight:{[A.id]:'prev',[w[1].id]:'aux'}});
+  let i=1;
+  steps.push({desc:`nodoAux = primero (${w[1].dato}). Camino hasta el último.`, code:'primeroAlFinal', line:6, vars:V({nodoAux:w[1].dato,nodoPrimero:A.dato}), list:snap(), highlight:{[w[1].id]:'aux',[A.id]:'prev'}});
+  while(i < w.length-1){ i++; steps.push({desc:`nodoAux tiene siguiente → avanzo (${w[i].dato}).`, code:'primeroAlFinal', line:8, vars:V({nodoAux:w[i].dato,nodoPrimero:A.dato}), list:snap(), highlight:{[w[i].id]:'aux',[A.id]:'prev'}}); }
+  steps.push({desc:`nodoAux (${w[i].dato}) es el último → <b>nodoAux.siguiente = nodoPrimero</b>.`, code:'primeroAlFinal', line:9, vars:V({nodoAux:w[i].dato,nodoPrimero:A.dato}), list:snap(), highlight:{[w[i].id]:'aux',[A.id]:'prev'}});
+  w.push(w.shift());
+  steps.push({desc:`<b>${A.dato}</b> quedó al final. ✅`, code:'primeroAlFinal', line:9, vars:V({}), list:snap(), highlight:{[A.id]:'found'}});
+  steps[steps.length-1].mutate=()=>{ lista=w; };
+  return steps;
+}
+
+function traceFinalAlInicio(){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  if(w.length<=1){ steps.push({desc:`tamaño ≤ 1 → no hay nada que mover.`, code:'finalAlInicio', line:2, vars:V({}), list:snap(), highlight:{}}); return steps; }
+  let i=0;
+  steps.push({desc:`nodoAux = primero (${w[0].dato}). Camino hasta el <b>anteúltimo</b> (hasta que nodoAux.siguiente.siguiente == None).`, code:'finalAlInicio', line:3, vars:V({nodoAux:w[0].dato}), list:snap(), highlight:{[w[0].id]:'aux'}});
+  while(i < w.length-2){ i++; steps.push({desc:`nodoAux.siguiente.siguiente ≠ None → avanzo (${w[i].dato}).`, code:'finalAlInicio', line:5, vars:V({nodoAux:w[i].dato}), list:snap(), highlight:{[w[i].id]:'aux'}}); }
+  const ultimo=w[w.length-1];
+  steps.push({desc:`nodoAux (${w[i].dato}) es el anteúltimo. <b>ultimo = ${ultimo.dato}</b>, <b>nodoAux.siguiente = None</b> (desengancho el último).`, code:'finalAlInicio', line:6, vars:V({nodoAux:w[i].dato,ultimo:ultimo.dato}), list:snap(), highlight:{[w[i].id]:'aux',[ultimo.id]:'target'}});
+  steps.push({desc:`<b>ultimo.siguiente = primero</b>, luego <b>primero = ultimo</b>. ${ultimo.dato} pasa al inicio.`, code:'finalAlInicio', line:8, vars:V({ultimo:ultimo.dato}), list:snap(), highlight:{[ultimo.id]:'aux'}});
+  w.unshift(w.pop());
+  steps.push({desc:`<b>${ultimo.dato}</b> quedó al inicio. ✅`, code:'finalAlInicio', line:9, vars:V({}), list:snap(), highlight:{[ultimo.id]:'found'}});
+  steps[steps.length-1].mutate=()=>{ lista=w; };
+  return steps;
+}
+
+function traceReemplazar(viejo,nuevo){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  steps.push({desc:`Reemplazo todos los <b>${viejo}</b> por <b>${nuevo}</b>. nodoAux = primero.`, code:'reemplazar', line:2, vars:V({datoViejo:viejo,datoNuevo:nuevo}), list:snap(), highlight:{}});
+  const hv={};
+  for(let i=0;i<w.length;i++){
+    const old=w[i].dato; const match=old===viejo;
+    if(match) w[i].dato=nuevo;
+    steps.push({desc:`¿<b>${old} == ${viejo}</b>? ${match?'<b>Sí</b> → nodoAux.dato = '+nuevo:'No'}.`, code:'reemplazar', line:4, vars:V({nodoAux:w[i].dato}), list:snap(), highlight:Object.assign({},hv,{[w[i].id]:match?'found':'aux'})});
+    hv[w[i].id]= match?'found':'visited';
+  }
+  steps.push({desc:`Recorrido completo. ✅`, code:'reemplazar', line:6, vars:V({}), list:snap(), highlight:hv});
+  steps[steps.length-1].mutate=()=>{ lista=w; };
+  return steps;
+}
+
+function traceDuplicar(){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const tam=w.length;
+  steps.push({desc:`<b>tamInicial = ${tam}</b>. Recorro los primeros ${tam} nodos y voy <b>agregando al final</b> una copia de cada uno. (No uso tieneSiguiente porque la lista crece.)`, code:'duplicar', line:4, vars:V({tamInicial:tam,posAux:0}), list:snap(), highlight:{}});
+  if(tam===0){ steps.push({desc:`Lista vacía → nada que duplicar.`, code:'duplicar', line:5, vars:V({}), list:snap(), highlight:{}}); return steps; }
+  const hv={};
+  for(let i=0;i<tam;i++){
+    const nuevo={id:nid(),dato:w[i].dato}; w.push(nuevo);
+    steps.push({desc:`posAux ${i}: <b>agregarAlFinal(${w[i].dato})</b>. Copia al final. posAux = ${i+1}.`, code:'duplicar', line:6, vars:V({nodoAux:w[i].dato,posAux:i+1,tamInicial:tam}), list:snap(), highlight:Object.assign({},hv,{[w[i].id]:'aux',[nuevo.id]:'nuevo'})});
+    hv[w[i].id]='visited';
+  }
+  steps.push({desc:`posAux == tamInicial → corta. Lista duplicada. ✅`, code:'duplicar', line:8, vars:V({}), list:snap(), highlight:{}});
+  steps[steps.length-1].mutate=()=>{ lista=w; };
+  return steps;
+}
+
+function traceDuplicarNodos(){
+  const orig=copiaLista(); const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  steps.push({desc:`Intercalo una copia <b>después de cada nodo</b>: nuevo.siguiente = nodoAux.siguiente, nodoAux.siguiente = nuevo, y salto 2.`, code:'duplicarNodos', line:2, vars:V({}), list:snap(), highlight:{}});
+  let idx=0;
+  for(let k=0;k<orig.length;k++){
+    const cur=w[idx]; const nuevo={id:nid(),dato:cur.dato}; w.splice(idx+1,0,nuevo);
+    steps.push({desc:`nodoAux = <b>${cur.dato}</b> → inserto copia <b>${nuevo.dato}</b> justo después. Salto los dos.`, code:'duplicarNodos', line:6, vars:V({nodoAux:cur.dato}), list:snap(), highlight:{[cur.id]:'aux',[nuevo.id]:'nuevo'}});
+    idx+=2;
+  }
+  steps.push({desc:`nodoAux == None → corta. Cada nodo quedó seguido de su copia. ✅`, code:'duplicarNodos', line:3, vars:V({}), list:snap(), highlight:{}});
+  steps[steps.length-1].mutate=()=>{ lista=w; };
+  return steps;
+}
+
+function traceSalteado(){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const sal=[]; const hv={};
+  steps.push({desc:`Recorrido <b>salteado</b> (uno sí, uno no). ⚠️ El código del profe tenía un bug de doble salto; esta es la versión correcta.`, code:'recorridoSalteado', line:2, vars:V({}), list:snap(), highlight:{}, out:'[]'});
+  let i=0;
+  while(i < w.length){
+    sal.push(w[i].dato);
+    steps.push({desc:`<b>print(${w[i].dato})</b>. Salto el siguiente: nodoAux = nodoAux.siguiente.siguiente.`, code:'recorridoSalteado', line:4, vars:V({nodoAux:w[i].dato}), list:snap(), highlight:Object.assign({},hv,{[w[i].id]:'found'}), out:'['+sal.join(', ')+']'});
+    hv[w[i].id]='found'; if(i+1<w.length) hv[w[i+1].id]='visited';
+    i+=2;
+  }
+  steps.push({desc:`nodoAux == None → corta. Visitados: [${sal.join(', ')}]. ✅`, code:'recorridoSalteado', line:3, vars:V({}), list:snap(), highlight:hv, out:'['+sal.join(', ')+']'});
+  return steps;
+}
+
+function traceParImpar(){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const sal=[]; const hv={};
+  steps.push({desc:`Imprimo cada nodo; si es <b>par</b> sigo al siguiente, si es <b>impar</b> me salto uno.`, code:'recorridoParImpar', line:2, vars:V({}), list:snap(), highlight:{}, out:'[]'});
+  let i=0;
+  while(i < w.length){
+    const d=w[i].dato; sal.push(d); const impar=(d%2!==0);
+    steps.push({desc:`<b>print(${d})</b>. ${d} es <b>${impar?'impar':'par'}</b> → ${impar?'salto el siguiente (avanzo 2)':'sigo (avanzo 1)'}.`, code:'recorridoParImpar', line:7, vars:V({nodoAux:d,datoAux:d}), list:snap(), highlight:Object.assign({},hv,{[w[i].id]:'found'}), out:'['+sal.join(', ')+']'});
+    hv[w[i].id]='found'; if(impar && i+1<w.length) hv[w[i+1].id]='visited';
+    i += impar?2:1;
+  }
+  steps.push({desc:`Terminado. Visitados: [${sal.join(', ')}]. ✅`, code:'recorridoParImpar', line:2, vars:V({}), list:snap(), highlight:hv, out:'['+sal.join(', ')+']'});
+  return steps;
+}
+
+function traceReemplazarMayores(limite,mult){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  steps.push({desc:`Los ≥ <b>${limite}</b> se multiplican por <b>${mult}</b>; el resto queda igual.`, code:'reemplazarMayores', line:2, vars:V({limite,multiplicador:mult}), list:snap(), highlight:{}});
+  const hv={};
+  for(let i=0;i<w.length;i++){
+    const d=w[i].dato; const may=d>=limite; if(may) w[i].dato=d*mult;
+    steps.push({desc:`¿<b>${d} >= ${limite}</b>? ${may?`<b>Sí</b> → ${d} * ${mult} = ${d*mult}`:'No → queda igual'}.`, code:'reemplazarMayores', line:4, vars:V({nodoAux:w[i].dato}), list:snap(), highlight:Object.assign({},hv,{[w[i].id]:may?'found':'aux'})});
+    hv[w[i].id]= may?'found':'visited';
+  }
+  steps.push({desc:`Recorrido completo. ✅`, code:'reemplazarMayores', line:6, vars:V({}), list:snap(), highlight:hv});
+  steps[steps.length-1].mutate=()=>{ lista=w; };
+  return steps;
+}
+
+function traceInsOrd(dato, desc){
+  // desc=false → ascendente ; desc=true → descendente
+  const code = desc ? 'insOrdDesc' : 'insOrdAsc';
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const nuevo={id:nid(),dato};
+  const cmpFront = desc ? (dato>=w[0]?.dato) : (dato<=w[0]?.dato);
+  const sig = desc ? '>' : '<';
+  steps.push({desc:`Inserto <b>${dato}</b> manteniendo el orden <b>${desc?'descendente ↓':'ascendente ↑'}</b>.`, code, line:2, vars:V({nuevo:dato}), list:snap(), ghost:{dato}, highlight:{}});
+  if(w.length===0){
+    w.push(nuevo);
+    steps.push({desc:`Lista vacía → primero = nuevo. ✅`, code, line:4, vars:V({}), list:snap(), highlight:{[nuevo.id]:'nuevo'}});
+  } else if(cmpFront){
+    steps.push({desc:`${dato} ${desc?'≥':'≤'} primero (${w[0].dato}) → va al <b>principio</b>.`, code, line:6, vars:V({}), list:snap(), ghost:{dato}, highlight:{[w[0].id]:'aux'}});
+    w.unshift(nuevo);
+    steps.push({desc:`Insertado al principio. ✅`, code, line:7, vars:V({}), list:snap(), highlight:{[nuevo.id]:'nuevo'}});
+  } else {
+    let i=0;
+    steps.push({desc:`nodoAux = primero. Avanzo mientras <b>nodoAux.siguiente.dato ${sig} ${dato}</b>.`, code, line:9, vars:V({nodoAux:w[0].dato}), list:snap(), ghost:{dato}, highlight:{[w[0].id]:'aux'}});
+    while(i < w.length-1 && (desc ? w[i+1].dato > dato : w[i+1].dato < dato)){
+      i++;
+      steps.push({desc:`nodoAux.siguiente (${w[i].dato}) ${sig} ${dato} → avanzo.`, code, line:11, vars:V({nodoAux:w[i].dato}), list:snap(), ghost:{dato}, highlight:{[w[i].id]:'aux'}});
+    }
+    const sigDato = (i+1<w.length)? w[i+1].dato : 'None';
+    steps.push({desc:`Freno en ${w[i].dato}. Reconecto: <b>nuevo.siguiente = nodoAux.siguiente</b>, <b>nodoAux.siguiente = nuevo</b>. ${dato} va entre ${w[i].dato} y ${sigDato}.`, code, line:12, vars:V({nodoAux:w[i].dato}), list:snap(), ghost:{dato}, highlight:Object.assign({[w[i].id]:'prev'}, (i+1<w.length?{[w[i+1].id]:'aux'}:{}))});
+    w.splice(i+1,0,nuevo);
+    steps.push({desc:`Insertado en orden. ✅`, code, line:13, vars:V({}), list:snap(), highlight:{[nuevo.id]:'nuevo'}});
+  }
+  steps[steps.length-1].mutate=()=>{ lista=w; };
+  return steps;
+}
+
+function ordenDe(w){
+  if(w.length<=1) return 'asc';
+  let asc=true, desc=true;
+  for(let i=0;i<w.length-1;i++){ if(!(w[i+1].dato>w[i].dato)) asc=false; if(!(w[i+1].dato<w[i].dato)) desc=false; }
+  return asc?'asc':(desc?'desc':'none');
+}
+function traceInsOrdAuto(dato){
+  const w=copiaLista(); const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const steps=[];
+  steps.push({desc:`Primero <b>detecto el orden</b> de la lista, después inserto ${dato} con el método correcto.`, code:'insOrdAuto', line:1, vars:V({}), list:snap(), highlight:{}});
+  const orden = ordenDe(w);
+  if(w.length<=1){
+    steps.push({desc:`Lista vacía o de 1 elemento → la trato como <b>ascendente</b>.`, code:'insOrdAuto', line:2, vars:V({}), list:snap(), highlight:{}});
+  } else {
+    const hv={};
+    for(let i=0;i<w.length-1;i++){
+      steps.push({desc:`Comparo <b>${w[i].dato}</b> con <b>${w[i+1].dato}</b>.`, code:'ordenAscendente', line:3, vars:V({}), list:snap(), highlight:Object.assign({},hv,{[w[i].id]:'aux',[w[i+1].id]:'prev'})});
+      hv[w[i].id]='visited';
+    }
+    steps.push({desc:`La lista está en orden <b>${orden==='asc'?'ascendente ↑':orden==='desc'?'descendente ↓':'DESORDENADO'}</b>.`, code:'insOrdAuto', line: orden==='asc'?3:orden==='desc'?5:7, vars:V({}), list:snap(), highlight:{}});
+  }
+  if(orden==='none'){
+    steps.push({desc:`Lista desordenada → <b>raise Exception("Lista desordenada")</b>. No se inserta.`, code:'insOrdAuto', line:7, vars:V({}), list:snap(), highlight:{}, out:'Exception: Lista desordenada'});
+    return steps;
+  }
+  return steps.concat(traceInsOrd(dato, orden==='desc'));
+}
+
 /* ===== UI ===== */
 function leerDato(){ const v=parseInt(document.getElementById('dato').value,10); return Number.isNaN(v)?null:v; }
 function leerPos(){ const v=parseInt(document.getElementById('pos').value,10); return Number.isNaN(v)?null:v; }
@@ -596,6 +1010,20 @@ document.querySelectorAll('[data-op]').forEach(b=>{
     else if(op==='obtener'){ const p=leerPos(); if(p===null){pedirDato('pos');return;} cargarSteps(traceObtener(p)); abrirDebugSiDesktop(); }
     else if(op==='asignar'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} const p=leerPos(); if(p===null){pedirDato('pos');return;} cargarSteps(traceAsignar(d,p)); abrirDebugSiDesktop(); }
     else if(op==='clonar'){ cargarSteps(traceClonar()); abrirDebugSiDesktop(); }
+    else if(op==='intercambiar'){ cargarSteps(traceIntercambiar()); abrirDebugSiDesktop(); }
+    else if(op==='buscar'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} cargarSteps(traceBuscaElemento(d)); abrirDebugSiDesktop(); }
+    else if(op==='eliminarOcurrencias'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} cargarSteps(traceEliminarOcurrencias(d)); abrirDebugSiDesktop(); }
+    else if(op==='primeroAlFinal'){ cargarSteps(tracePrimeroAlFinal()); abrirDebugSiDesktop(); }
+    else if(op==='finalAlInicio'){ cargarSteps(traceFinalAlInicio()); abrirDebugSiDesktop(); }
+    else if(op==='reemplazar'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} const p=leerPos(); if(p===null){pedirDato('pos');return;} cargarSteps(traceReemplazar(d,p)); abrirDebugSiDesktop(); }
+    else if(op==='duplicar'){ cargarSteps(traceDuplicar()); abrirDebugSiDesktop(); }
+    else if(op==='duplicarNodos'){ cargarSteps(traceDuplicarNodos()); abrirDebugSiDesktop(); }
+    else if(op==='salteado'){ cargarSteps(traceSalteado()); abrirDebugSiDesktop(); }
+    else if(op==='parImpar'){ cargarSteps(traceParImpar()); abrirDebugSiDesktop(); }
+    else if(op==='reemplazarMayores'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} const p=leerPos(); if(p===null){pedirDato('pos');return;} cargarSteps(traceReemplazarMayores(d,p)); abrirDebugSiDesktop(); }
+    else if(op==='insOrdAsc'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} cargarSteps(traceInsOrd(d,false)); abrirDebugSiDesktop(); }
+    else if(op==='insOrdDesc'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} cargarSteps(traceInsOrd(d,true)); abrirDebugSiDesktop(); }
+    else if(op==='insOrdAuto'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} cargarSteps(traceInsOrdAuto(d)); abrirDebugSiDesktop(); }
     else if(op==='recorrer'){ cargarSteps(traceRecorrer()); abrirDebugSiDesktop(); }
     else if(op==='tamano'){ cargarSteps(traceTamano()); abrirDebugSiDesktop(); }
     else if(op==='estaVacia'){ cargarSteps(traceEstaVacia()); abrirDebugSiDesktop(); }
