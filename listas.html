@@ -81,6 +81,9 @@
         <button class="btn btn-sm" data-op="aleatorio">+ Random</button>
       </div>
       <div class="text-[11px] text-muted mt-1.5">"dato" = valor · "pos" = posición (0 = primero)</div>
+      <div class="mt-2">
+        <input id="lista2vals" type="text" placeholder="lista2 (ej: 4,9,1,2)" class="field w-full">
+      </div>
       <div class="flex gap-2 flex-wrap mt-3 pt-3 border-t border-line">
         <button class="btn btn-sm" data-op="ejemplo">Ejemplo</button>
         <button class="btn btn-sm" data-op="vaciar">Vaciar</button>
@@ -119,6 +122,10 @@
         <button class="btn btn-sm" data-op="insOrdAsc">Insertar ord. ↑ (d)</button>
         <button class="btn btn-sm" data-op="insOrdDesc">Insertar ord. ↓ (d)</button>
         <button class="btn btn-sm" data-op="insOrdAuto">Insertar ord. auto (d)</button>
+        <button class="btn btn-sm" data-op="insSinRep">Insertar sin repetir (d)</button>
+        <button class="btn btn-sm" data-op="insEnPos">Insertar lista2 en pos</button>
+        <button class="btn btn-sm" data-op="insCeros">Insertar ceros (pares)</button>
+        <button class="btn btn-sm" data-op="elimSeg">Eliminar segmento (d→p)</button>
       </div>
     </div>
 
@@ -465,6 +472,76 @@ const CODE = {
     '        self.insertarOrdenadoMayorMenor(dato)',
     '    else:',
     '        raise Exception("Lista desordenada")',
+  ],
+  insertarSinRepetir:[
+    'def insertarSinRepetir(self, datoIns):',
+    '    nuevo = Lista.__NodoLista(datoIns)',
+    '    if self.estaVacia():',
+    '        self.__primero = nuevo',
+    '    else:',
+    '        nodoAux = self.__primero',
+    '        while nodoAux.dato != datoIns and nodoAux.tieneSiguiente():',
+    '            nodoAux = nodoAux.siguiente',
+    '        if not nodoAux.tieneSiguiente() and nodoAux.dato != datoIns:',
+    '            nodoAux.siguiente = nuevo',
+  ],
+  eliminarSegmento:[
+    'def eliminarSegmento(self, inicioPos, finalPos):',
+    '    if not self.estaVacia():',
+    '        if inicioPos == 0:',
+    '            nodoFinal = self.__primero',
+    '            posFinal = 0',
+    '            while posFinal <= finalPos and nodoFinal != None:',
+    '                nodoFinal = nodoFinal.siguiente',
+    '                posFinal += 1',
+    '            self.__primero = nodoFinal',
+    '        else:',
+    '            nodoAnterior = self.__primero',
+    '            posAnterior = 0',
+    '            while posAnterior < inicioPos - 1:',
+    '                nodoAnterior = nodoAnterior.siguiente',
+    '                posAnterior += 1',
+    '            nodoFinal = nodoAnterior',
+    '            posFinal = posAnterior',
+    '            while posFinal <= finalPos and nodoFinal != None:',
+    '                nodoFinal = nodoFinal.siguiente',
+    '                posFinal += 1',
+    '            nodoAnterior.siguiente = nodoFinal',
+  ],
+  insertarCeros:[
+    'def insertarCeros(self):',
+    '    nodoAux = self.__primero',
+    '    while nodoAux != None and nodoAux.tieneSiguiente():',
+    '        if esPar(nodoAux.dato) and esPar(nodoAux.siguiente.dato):',
+    '            cero = Lista.__NodoLista(0)',
+    '            cero.siguiente = nodoAux.siguiente',
+    '            nodoAux.siguiente = cero',
+    '            nodoAux = cero.siguiente          # avanzo 2 (salteo el 0)',
+    '        else:',
+    '            nodoAux = nodoAux.siguiente        # avanzo 1',
+  ],
+  insertarEnPosI:[
+    'def insertarEnPosI(self, lista2, posIns):',
+    '    if not lista2.estaVacia():',
+    '        if self.estaVacia():',
+    '            self.__primero = lista2.__primero',
+    '        elif posIns == 0:',
+    '            ultimo = lista2.__primero',
+    '            while ultimo.tieneSiguiente():',
+    '                ultimo = ultimo.siguiente',
+    '            ultimo.siguiente = self.__primero',
+    '            self.__primero = lista2.__primero',
+    '        else:',
+    '            anterior = self.__primero',
+    '            posAnterior = 0',
+    '            while posAnterior < posIns - 1 and anterior.tieneSiguiente():',
+    '                anterior = anterior.siguiente',
+    '                posAnterior += 1',
+    '            ultimo = lista2.__primero',
+    '            while ultimo.tieneSiguiente():',
+    '                ultimo = ultimo.siguiente',
+    '            ultimo.siguiente = anterior.siguiente',
+    '            anterior.siguiente = lista2.__primero',
   ],
 };
 
@@ -991,8 +1068,136 @@ function traceInsOrdAuto(dato){
   return steps.concat(traceInsOrd(dato, orden==='desc'));
 }
 
+function traceInsertarSinRepetir(dato){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const nuevo={id:nid(),dato};
+  steps.push({desc:`Creo <b>nuevo = ${dato}</b>. Lo agrego al final <b>solo si no está repetido</b>.`, code:'insertarSinRepetir', line:2, vars:V({nuevo:dato}), list:snap(), ghost:{dato}, highlight:{}});
+  if(w.length===0){
+    w.push(nuevo);
+    steps.push({desc:`Lista vacía → primero = nuevo. ✅`, code:'insertarSinRepetir', line:4, vars:V({}), list:snap(), highlight:{[nuevo.id]:'nuevo'}});
+    steps[steps.length-1].mutate=()=>{ lista=w; };
+    return steps;
+  }
+  let i=0; const hv={};
+  steps.push({desc:`nodoAux = primero (${w[0].dato}). Avanzo mientras <b>nodoAux.dato != ${dato}</b> y tenga siguiente.`, code:'insertarSinRepetir', line:7, vars:V({nodoAux:w[0].dato}), list:snap(), ghost:{dato}, highlight:{[w[0].id]:'aux'}});
+  while(w[i].dato !== dato && i < w.length-1){
+    hv[w[i].id]='visited'; i++;
+    steps.push({desc:`${w[i-1].dato} != ${dato} y tiene siguiente → avanzo a <b>${w[i].dato}</b>.`, code:'insertarSinRepetir', line:8, vars:V({nodoAux:w[i].dato}), list:snap(), ghost:{dato}, highlight:Object.assign({},hv,{[w[i].id]:'aux'})});
+  }
+  const esUltimo = i===w.length-1;
+  const repetido = w[i].dato===dato;
+  steps.push({desc:`Freno en <b>${w[i].dato}</b>. ¿No tiene siguiente (${esUltimo}) <b>y</b> es distinto de ${dato} (${!repetido})?`, code:'insertarSinRepetir', line:9, vars:V({nodoAux:w[i].dato}), list:snap(), ghost: repetido?undefined:{dato}, highlight:Object.assign({},hv,{[w[i].id]: repetido?'target':'aux'})});
+  if(esUltimo && !repetido){
+    w.push(nuevo);
+    steps.push({desc:`Sí → es el último y no está repetido → <b>nodoAux.siguiente = nuevo</b>. Agregado. ✅`, code:'insertarSinRepetir', line:10, vars:V({}), list:snap(), highlight:{[nuevo.id]:'nuevo'}});
+    steps[steps.length-1].mutate=()=>{ lista=w; };
+  } else {
+    steps.push({desc:`No → <b>${dato} ya está</b> en la lista. No se inserta (la lista no varía). ✅`, code:'insertarSinRepetir', line:9, vars:V({}), list:snap(), highlight:{[w[i].id]:'target'}, out:`${dato} ya existe → no se agrega`});
+  }
+  return steps;
+}
+
+function traceInsertarEnPosI(l2vals, pos){
+  const w=copiaLista(); const steps=[];
+  const l2 = l2vals.map(v=>({id:nid(),dato:v}));
+  const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const l2snap=()=>l2.map(n=>({id:n.id,dato:n.dato}));
+  const verde=(arr)=>Object.fromEntries(arr.map(n=>[n.id,'nuevo']));
+  if(l2.length===0){
+    steps.push({desc:`lista2 está vacía → no hay nada que insertar.`, code:'insertarEnPosI', line:2, vars:V({posIns:pos}), list:snap(), highlight:{}});
+    return steps;
+  }
+  steps.push({desc:`Inserto <b>lista2</b> (${l2.map(n=>n.dato).join(', ')}) en la posición <b>${pos}</b> de la lista.`, code:'insertarEnPosI', line:2, vars:V({posIns:pos}), list:snap(), clon:l2snap(), highlight:{}});
+  if(w.length===0){
+    const res=l2;
+    steps.push({desc:`self está vacía → <b>self.__primero = lista2.__primero</b>. La lista pasa a ser lista2. ✅`, code:'insertarEnPosI', line:4, vars:V({}), list:l2snap(), highlight:verde(l2)});
+    steps[steps.length-1].mutate=()=>{ lista=res; };
+    return steps;
+  }
+  if(pos===0){
+    steps.push({desc:`posIns == 0 → al <b>principio</b>. El último de lista2 (<b>${l2[l2.length-1].dato}</b>) apunta a self.__primero, y <b>self.__primero = lista2.__primero</b>.`, code:'insertarEnPosI', line:6, vars:V({}), list:snap(), clon:l2snap(), highlight:{[w[0].id]:'aux'}, clonHl:{[l2[l2.length-1].id]:'prev',[l2[0].id]:'nuevo'}});
+    const res=l2.concat(w);
+    steps.push({desc:`lista2 insertada al principio. ✅`, code:'insertarEnPosI', line:10, vars:V({}), list:res.map(n=>({id:n.id,dato:n.dato})), highlight:verde(l2)});
+    steps[steps.length-1].mutate=()=>{ lista=res; };
+    return steps;
+  }
+  let i=0;
+  steps.push({desc:`anterior = primero (${w[0].dato}), posAnterior = 0. Camino hasta <b>posIns-1 = ${pos-1}</b> (o el último).`, code:'insertarEnPosI', line:12, vars:V({anterior:w[0].dato,posAnterior:0}), list:snap(), clon:l2snap(), highlight:{[w[0].id]:'aux'}});
+  while(i < pos-1 && i < w.length-1){
+    i++;
+    steps.push({desc:`posAnterior ${i-1} < ${pos-1} y hay siguiente → avanzo a <b>${w[i].dato}</b>.`, code:'insertarEnPosI', line:14, vars:V({anterior:w[i].dato,posAnterior:i}), list:snap(), clon:l2snap(), highlight:{[w[i].id]:'aux'}});
+  }
+  const sigDato = (i+1<w.length)? w[i+1].dato : 'None';
+  steps.push({desc:`Freno en <b>${w[i].dato}</b> (pos ${i}). <b>ultimo(lista2).siguiente = anterior.siguiente</b> (${sigDato}), luego <b>anterior.siguiente = lista2.__primero</b>.`, code:'insertarEnPosI', line:20, vars:V({anterior:w[i].dato}), list:snap(), clon:l2snap(), highlight:Object.assign({[w[i].id]:'prev'}, (i+1<w.length?{[w[i+1].id]:'aux'}:{})), clonHl:{[l2[0].id]:'nuevo',[l2[l2.length-1].id]:'prev'}});
+  const res = w.slice(0,i+1).concat(l2, w.slice(i+1));
+  steps.push({desc:`lista2 quedó insertada después de la posición ${i}. ✅`, code:'insertarEnPosI', line:21, vars:V({}), list:res.map(n=>({id:n.id,dato:n.dato})), highlight:verde(l2)});
+  steps[steps.length-1].mutate=()=>{ lista=res; };
+  return steps;
+}
+
+function traceEliminarSegmento(inicio, final){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  if(w.length===0){ steps.push({desc:`Lista vacía → nada que eliminar.`, code:'eliminarSegmento', line:2, vars:V({inicioPos:inicio,finalPos:final}), list:snap(), highlight:{}}); return steps; }
+  const segHl=()=>{ const h={}; for(let k=inicio;k<=Math.min(final,w.length-1);k++){ if(w[k]) h[w[k].id]='target'; } return h; };
+  steps.push({desc:`Elimino el segmento de posiciones <b>${inicio}</b> a <b>${final}</b> (inclusive). En rojo lo que se va.`, code:'eliminarSegmento', line:2, vars:V({inicioPos:inicio,finalPos:final}), list:snap(), highlight:segHl()});
+  if(inicio===0){
+    steps.push({desc:`inicioPos == 0 → borro desde la <b>cabeza</b>. nodoFinal = primero, posFinal = 0.`, code:'eliminarSegmento', line:4, vars:V({posFinal:0}), list:snap(), highlight:Object.assign(segHl(),{[w[0].id]:'aux'})});
+    let pf=0, idx=0;
+    while(pf <= final && idx < w.length){
+      idx++; pf++;
+      const cur = idx<w.length ? w[idx] : null;
+      steps.push({desc:`posFinal ${pf-1} ≤ ${final} → avanzo. nodoFinal ${cur?'= '+cur.dato:'= None'}, posFinal = ${pf}.`, code:'eliminarSegmento', line:6, vars:V({posFinal:pf}), list:snap(), highlight:Object.assign(segHl(), cur?{[cur.id]:'aux'}:{})});
+    }
+    const res=w.slice(idx);
+    steps.push({desc:`<b>self.__primero = nodoFinal</b>. Segmento eliminado. ✅`, code:'eliminarSegmento', line:9, vars:V({}), list:res.map(n=>({id:n.id,dato:n.dato})), highlight:{}});
+    steps[steps.length-1].mutate=()=>{ lista=res; };
+    return steps;
+  }
+  let pa=0, ai=0;
+  steps.push({desc:`nodoAnterior = primero (${w[0].dato}). Camino hasta <b>inicioPos-1 = ${inicio-1}</b>.`, code:'eliminarSegmento', line:11, vars:V({nodoAnterior:w[0].dato,posAnterior:0}), list:snap(), highlight:Object.assign(segHl(),{[w[0].id]:'aux'})});
+  while(pa < inicio-1){
+    ai++; pa++;
+    steps.push({desc:`posAnterior ${pa-1} < ${inicio-1} → avanzo a <b>${w[ai].dato}</b>.`, code:'eliminarSegmento', line:14, vars:V({nodoAnterior:w[ai].dato,posAnterior:pa}), list:snap(), highlight:Object.assign(segHl(),{[w[ai].id]:'aux'})});
+  }
+  let pf=pa, fi=ai;
+  steps.push({desc:`nodoAnterior en pos ${ai} (<b>${w[ai].dato}</b>). Ahora nodoFinal avanza desde ahí hasta <b>${final}+1</b> (o None).`, code:'eliminarSegmento', line:16, vars:V({nodoAnterior:w[ai].dato,posFinal:pf}), list:snap(), highlight:Object.assign(segHl(),{[w[ai].id]:'prev'})});
+  while(pf <= final && fi < w.length){
+    fi++; pf++;
+    const cur = fi<w.length ? w[fi] : null;
+    steps.push({desc:`posFinal ${pf-1} ≤ ${final} → avanzo. nodoFinal ${cur?'= '+cur.dato:'= None'}.`, code:'eliminarSegmento', line:18, vars:V({posFinal:pf}), list:snap(), highlight:Object.assign(segHl(),{[w[ai].id]:'prev'}, cur?{[cur.id]:'aux'}:{})});
+  }
+  const res=w.slice(0,ai+1).concat(w.slice(fi));
+  steps.push({desc:`<b>nodoAnterior.siguiente = nodoFinal</b>. Segmento eliminado. ✅`, code:'eliminarSegmento', line:21, vars:V({}), list:res.map(n=>({id:n.id,dato:n.dato})), highlight:{}});
+  steps[steps.length-1].mutate=()=>{ lista=res; };
+  return steps;
+}
+
+function traceInsertarCeros(){
+  const w=copiaLista(); const steps=[]; const snap=()=>w.map(n=>({id:n.id,dato:n.dato}));
+  const par=n=>n%2===0;
+  steps.push({desc:`Inserto un <b>0</b> entre cada par de números <b>pares consecutivos</b>. nodoAux = primero.`, code:'insertarCeros', line:2, vars:V({}), list:snap(), highlight:{}});
+  let i=0; const hv={};
+  while(i < w.length-1){
+    const a=w[i], b=w[i+1]; const ambos=par(a.dato)&&par(b.dato);
+    steps.push({desc:`¿<b>${a.dato}</b> y <b>${b.dato}</b> ambos pares? ${ambos?'<b>Sí</b> → inserto un 0 en el medio.':'No → avanzo 1.'}`, code:'insertarCeros', line:4, vars:V({nodoAux:a.dato}), list:snap(), highlight:Object.assign({},hv,{[a.id]:'aux'}, ambos?{[b.id]:'prev'}:{})});
+    if(ambos){
+      const cero={id:nid(),dato:0}; w.splice(i+1,0,cero);
+      steps.push({desc:`0 insertado entre ${a.dato} y ${b.dato}. <b>nodoAux = cero.siguiente</b> → avanzo 2 (salteo el 0, caigo en ${b.dato}).`, code:'insertarCeros', line:8, vars:V({nodoAux:b.dato}), list:snap(), highlight:Object.assign({},hv,{[cero.id]:'nuevo',[b.id]:'aux'})});
+      hv[a.id]='visited'; hv[cero.id]='visited';
+      i += 2;
+    } else {
+      hv[a.id]='visited';
+      i += 1;
+    }
+  }
+  steps.push({desc:`nodoAux no tiene siguiente → corta. ✅`, code:'insertarCeros', line:3, vars:V({}), list:snap(), highlight:hv});
+  steps[steps.length-1].mutate=()=>{ lista=w; };
+  return steps;
+}
+
 /* ===== UI ===== */
 function leerDato(){ const v=parseInt(document.getElementById('dato').value,10); return Number.isNaN(v)?null:v; }
+function leerLista2(){ const s=document.getElementById('lista2vals').value.trim(); if(!s) return null; const arr=s.split(/[\s,]+/).map(x=>parseInt(x,10)).filter(x=>!Number.isNaN(x)); return arr.length?arr:null; }
 function leerPos(){ const v=parseInt(document.getElementById('pos').value,10); return Number.isNaN(v)?null:v; }
 function pedirDato(campo){
   const inp=document.getElementById(campo);
@@ -1024,6 +1229,10 @@ document.querySelectorAll('[data-op]').forEach(b=>{
     else if(op==='insOrdAsc'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} cargarSteps(traceInsOrd(d,false)); abrirDebugSiDesktop(); }
     else if(op==='insOrdDesc'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} cargarSteps(traceInsOrd(d,true)); abrirDebugSiDesktop(); }
     else if(op==='insOrdAuto'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} cargarSteps(traceInsOrdAuto(d)); abrirDebugSiDesktop(); }
+    else if(op==='insSinRep'){ const d=leerDato(); if(d===null){pedirDato('dato');return;} cargarSteps(traceInsertarSinRepetir(d)); abrirDebugSiDesktop(); }
+    else if(op==='insCeros'){ cargarSteps(traceInsertarCeros()); abrirDebugSiDesktop(); }
+    else if(op==='elimSeg'){ const ini=leerDato(); if(ini===null){pedirDato('dato');return;} const fin=leerPos(); if(fin===null){pedirDato('pos');return;} if(ini<0){ alert('inicio debe ser ≥ 0'); return; } if(fin<ini){ alert('La posición final debe ser ≥ la inicial.'); return; } cargarSteps(traceEliminarSegmento(ini,fin)); abrirDebugSiDesktop(); }
+    else if(op==='insEnPos'){ const l2=leerLista2(); if(l2===null){ const inp=document.getElementById('lista2vals'); if(sidebar.classList.contains('menu-closed')) sidebar.classList.remove('menu-closed'); inp.focus(); inp.classList.add('ring-2','ring-bad'); setTimeout(()=>inp.classList.remove('ring-2','ring-bad'),1500); alert('Escribí los valores de lista2 (ej: 4,9,1,2) en el campo "lista2".'); return; } const p=leerPos(); if(p===null){pedirDato('pos');return;} cargarSteps(traceInsertarEnPosI(l2,p)); abrirDebugSiDesktop(); }
     else if(op==='recorrer'){ cargarSteps(traceRecorrer()); abrirDebugSiDesktop(); }
     else if(op==='tamano'){ cargarSteps(traceTamano()); abrirDebugSiDesktop(); }
     else if(op==='estaVacia'){ cargarSteps(traceEstaVacia()); abrirDebugSiDesktop(); }
